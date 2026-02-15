@@ -99,6 +99,35 @@ npm install
 npm run dev
 ```
 
+## 시작하기
+
+### 빠른 시작
+
+```bash
+# 1. Ollama 설치 및 모델 다운로드
+brew install ollama
+brew services start ollama
+ollama pull nomic-embed-text
+ollama pull llama3.2
+
+# 2. PostgreSQL + pgvector 시작
+cd market-insight
+docker-compose up -d
+
+# 3. 백엔드 설정
+cd backend
+cp .env.example .env
+uv sync
+
+# 4. 데이터베이스 초기화
+uv run python -c "from storage.db import init_database; init_database()"
+
+# 5. API 서버 실행
+uv run python api/main.py
+```
+
+상세 설정 방법은 [설치 및 설정 가이드](SETUP_GUIDE.md)를 참조하세요.
+
 ## 설정
 
 ### config/watchlist.yaml
@@ -106,6 +135,9 @@ npm run dev
 
 ### config/sources.yaml
 콘텐츠 수집 소스 설정 (YouTube, Naver Blog 등)
+
+### config/prompts.yaml
+LLM 프롬프트 템플릿 설정
 
 ### .env
 API 키 및 환경 변수 설정
@@ -131,6 +163,7 @@ PostgreSQL + pgvector 컨테이너 설정
 
 ## 문서
 
+- [설치 및 설정 가이드](SETUP_GUIDE.md) - 처음부터 설정하는 방법
 - [시퀀스 다이어그램](SEQUENCE_DIAGRAMS.md) - 시스템 흐름과 API 상호작용
 - [구현 진행 상황](IMPLEMENTATION_PROGRESS.md) - 상세 구현 상태
 - [배포 매뉴얼](DEPLOYMENT_MANUAL.md) - 배포 및 설정 가이드
