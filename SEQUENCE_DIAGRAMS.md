@@ -783,3 +783,175 @@ sequenceDiagram
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## 9. WebSocket 실시간 업데이트 흐름 (WebSocket Real-time Update Flow)
+
+### 9.1 포트폴리오 실시간 업데이트
+
+```mermaid
+sequenceDiagram
+    participant Dashboard as Dashboard (Next.js)
+    participant WS as WebSocket Server
+    participant API as FastAPI
+    participant DB as PostgreSQL
+    participant Notif as Notification Manager
+
+    Dashboard->>WS: WebSocket 연결 (ws://localhost:3000/api/v1/ws)
+    WS-->>Dashboard: 연결 확인 + 채널 구독
+    
+    Note over Dashboard,WS: 대기 상태
+    
+    API->>DB: 포트폴리오 데이터 업데이트
+    DB-->>API: 업데이트된 데이터
+    
+    API->>WS: broadcast_portfolio_update(data)
+    
+    WS->>Dashboard: portfolio_update 메시지
+    Note over Dashboard: 포트폴리오 UI 자동 업데이트
+    
+    Dashboard->>Notif: 알림 전송 요청
+    Notif->>Notif: 우선순위 확인
+    Notif->>Notif: 조용한 시간 확인
+    
+    alt 알림 전송 조건 충족
+        Notif->>Notif: 이메일 발송
+        Notif->>Notif: 텔레그램 발송
+    end
+```
+
+### 9.2 가격 알림 흐름
+
+```mermaid
+sequenceDiagram
+    participant Scheduler as Scheduler
+    participant Tracker as StockTracker
+    participant WS as WebSocket Server
+    participant Notif as Notification Manager
+    participant Email as Email Notifier
+    participant Telegram as Telegram Notifier
+
+    Scheduler->>Tracker: 주식 가격 추적 (1시간마다)
+    Tracker->>Tracker: 현재 가격 확인
+    
+    alt 가격이 목표에 도달
+        Tracker->>WS: broadcast_alert(alert_data)
+        WS->>Dashboard: alert 메시지
+        
+        Tracker->>Notif: send_price_alert()
+        Notif->>Notif: 우선순위 확인 (high)
+        
+        alt 이메일 활성화
+            Notif->>Email: send(notification)
+            Email-->>Notif: 전송 성공
+        end
+        
+        alt 텔레그램 활성화
+            Notif->>Telegram: send(notification)
+            Telegram-->>Notif: 전송 성공
+        end
+    end
+```
+
+### 9.3 새로운 생각 브로드캐스팅
+
+```mermaid
+sequenceDiagram
+    participant CLI as CLI
+    participant API as FastAPI
+    participant WS as WebSocket Server
+    participant Dashboard as Dashboard
+    participant Vector as pgvector
+
+    CLI->>API: POST /api/v1/thoughts
+    API->>Vector: 생각 임베딩 생성
+    Vector-->>API: embedding vector
+    API->>API: 저장 완료
+    
+    API->>WS: broadcast_new_thought(thought_data)
+    
+    WS->>Dashboard: new_thought 메시지
+    Note over Dashboard: 생각 UI 자동 업데이트
+```
+
+---
+
+## 10. 알림 시스템 흐름 (Notification System Flow)
+
+### 10.1 이메일 알림 전송
+
+```mermaid
+sequenceDiagram
+    participant System as Market Insight
+    participant Notif as Notification Manager
+    participant Email as Email Notifier
+    participant SMTP as SMTP Server
+    participant User as User Email
+
+    System->>Notif: send_notification(title, message, type, priority)
+    
+    Notif->>Notif: 우선순위 확인
+    Notif->>Notif: 조용한 시간 확인
+    
+    alt 알림 전송 조건 충족
+        Notif->>Email: send(notification)
+        Email->>Email: HTML 이메일 생성
+        Email->>SMTP: SMTP 연결
+        Email->>SMTP: 이메일 전송
+        SMTP-->>Email: 전송 성공
+        Email-->>Notif: 성공
+        SMTP->>User: 이메일 수신
+    else 조건 불충족
+        Notif-->>System: 알림 스킵
+    end
+```
+
+### 10.2 텔레그램 알림 전송
+
+```mermaid
+sequenceDiagram
+    participant System as Market Insight
+    participant Notif as Notification Manager
+    participant Telegram as Telegram Notifier
+    participant API as Telegram API
+    participant User as User Telegram
+
+    System->>Notif: send_notification(title, message, type, priority)
+    
+    Notif->>Notif: 우선순위 확인
+    Notif->>Notif: 조용한 시간 확인
+    
+    alt 알림 전송 조건 충족
+        Notif->>Telegram: send(notification)
+        Telegram->>Telegram: 메시지 포맷팅 (HTML)
+        Telegram->>API: POST /sendMessage
+        API-->>Telegram: 성공
+        Telegram-->>Notif: 성공
+        API->>User: 텔레그램 메시지 수신
+    else 조건 불충족
+        Notif-->>System: 알림 스킵
+    end
+```
+
+### 10.3 우선순위 및 조용한 시간 필터링
+
+```mermaid
+flowchart TD
+    A[알림 요청] --> B{우선순위 확인}
+    B -->|우선순위 >= 최소| C{조용한 시간 확인}
+    B -->|우선순위 < 최소| E[알림 스킵]
+    
+    C -->|조용한 시간 외| D{알림 채널 확인}
+    C -->|조용한 시간 내| F{긴급 우선순위?}
+    
+    F -->|예| D
+    F -->|아니오| E
+    
+    D -->|이메일 활성화| G[이메일 전송]
+    D -->|텔레그램 활성화| H[텔레그램 전송]
+    
+    G --> I[전송 완료]
+    H --> I
+    E --> J[로그 기록]
+```

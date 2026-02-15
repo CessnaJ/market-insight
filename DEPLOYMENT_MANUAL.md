@@ -10,11 +10,12 @@
 4. [백엔드 설정](#백엔드-설정)
 5. [대시보드 설정](#대시보드-설정)
 6. [MCP 서버 설정 (Claude Desktop)](#mcp-서버-설정-claude-desktop)
-7. [시스템 실행](#시스템-실행)
-8. [CLI 명령어 가이드](#cli-명령어-가이드)
-9. [API 엔드포인트](#api-엔드포인트)
-10. [스케줄러 설정](#스케줄러-설정)
-11. [문제 해결](#문제-해결)
+7. [WebSocket 및 알림 시스템 설정](#websocket-및-알림-시스템-설정)
+8. [시스템 실행](#시스템-실행)
+9. [CLI 명령어 가이드](#cli-명령어-가이드)
+10. [API 엔드포인트](#api-엔드포인트)
+11. [스케줄러 설정](#스케줄러-설정)
+12. [문제 해결](#문제-해결)
 
 ---
 
@@ -179,6 +180,26 @@ ollama_embed_model=nomic-embed-text
 api_host=0.0.0.0
 api_port=3000
 log_level=INFO
+
+# 알림 시스템 설정 (선택)
+# 이메일 알림
+# notification_email_enabled=false
+# notification_email_host=smtp.gmail.com
+# notification_email_port=587
+# notification_email_username=your_email@gmail.com
+# notification_email_password=your_app_password_here
+# notification_email_from=your_email@gmail.com
+# notification_email_to=recipient1@example.com,recipient2@example.com
+
+# 텔레그램 알림
+# notification_telegram_enabled=false
+# notification_telegram_bot_token=your_bot_token_here
+# notification_telegram_chat_id=your_chat_id_here
+
+# 알림 설정
+# notification_notification_min_priority=normal
+# notification_quiet_hours_start=22
+# notification_quiet_hours_end=8
 ```
 
 ### 3. 데이터베이스 초기화
@@ -195,6 +216,53 @@ uv run python -c "from storage.db import init_database; init_database()"
 - [`config/watchlist.yaml`](market-insight/backend/config/watchlist.yaml:1) - 관심 종목 목록
 - [`config/sources.yaml`](market-insight/backend/config/sources.yaml:1) - 콘텐츠 수집 소스
 - [`config/prompts.yaml`](market-insight/backend/config/prompts.yaml:1) - LLM 프롬프트
+
+---
+
+## WebSocket 및 알림 시스템 설정
+
+### WebSocket 실시간 업데이트
+
+WebSocket을 사용하면 대시보드에서 실시간으로 데이터 업데이트를 받을 수 있습니다.
+
+#### WebSocket 엔드포인트
+
+```
+ws://localhost:3000/api/v1/ws
+```
+
+#### 채널
+
+- `portfolio`: 포트폴리오 업데이트
+- `thoughts`: 새로운 생각
+- `reports`: 새로운 리포트
+- `alerts`: 가격 알림 및 알림
+
+### 알림 시스템
+
+#### 이메일 알림 설정
+
+Gmail을 사용하는 경우 앱 비밀번호가 필요합니다:
+
+1. [Google 계정 보안](https://myaccount.google.com/security) 접속
+2. 2단계 인증 활성화
+3. 앱 비밀번호 생성
+4. `.env` 파일에 설정
+
+#### 텔레그램 알림 설정
+
+1. [@BotFather](https://t.me/botfather)에서 봇 생성
+2. 봇 토큰 발급
+3. 봇에게 메시지 보내기
+4. `https://api.telegram.org/bot<token>/getUpdates`로 채팅 ID 확인
+5. `.env` 파일에 설정
+
+#### 우선순위 및 조용한 시간
+
+- 우선순위: `low`, `normal`, `high`, `urgent`
+- 조용한 시간: 특정 시간대에 알림 비활성화 (urgent 제외)
+
+상세 설정은 [WebSocket 및 알림 시스템 가이드](WEBSOCKET_AND_NOTIFICATIONS.md)를 참조하세요.
 
 ---
 

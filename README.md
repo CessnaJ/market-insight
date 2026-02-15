@@ -27,9 +27,12 @@ market-insight/
 - **생각 기록**: CLI/Telegram으로 생각 기록, PostgreSQL + pgvector로 의미 검색
 - **포트폴리오 관리**: 보유 종목, 매수/매도 기록
 - **API 엔드포인트**: RESTful API (포트 3000)
+- **WebSocket 실시간 업데이트**: 포트폴리오, 생각, 리포트 실시간 동기화
+- **알림 시스템**: 이메일, 텔레그램 알림 (우선순위 기반 필터링)
 
 ### 프론트엔드 (Next.js)
 - **대시보드**: 포트폴리오 현황 시각화
+- **실시간 업데이트**: WebSocket을 통한 자동 데이터 갱신
 - **반응형 디자인**: Tailwind CSS
 
 ## 시작하기
@@ -148,21 +151,23 @@ PostgreSQL + pgvector 컨테이너 설정
 ## 기술 스택
 
 ### 백엔드
-- Python 3.10+
-- FastAPI
-- SQLModel (PostgreSQL)
-- PostgreSQL + pgvector (벡터 저장소)
-- APScheduler (스케줄링)
-- Ollama (LLM, 임베딩)
+- FastAPI (웹 프레임워크)
+- PostgreSQL + pgvector (데이터베이스)
+- WebSocket (실시간 통신)
+- aiosmtplib (이메일 발송)
+- python-telegram-bot (텔레그램 봇)
 
 ### 프론트엔드
-- Next.js 14
+- Next.js 14 (React 프레임워크)
 - TypeScript
-- Tailwind CSS
-- Recharts
+- Tailwind CSS (스타일링)
+- Recharts (차트)
+- Lucide React (아이콘)
 
 ## 문서
 
+- [WebSocket 및 알림 시스템 가이드](WEBSOCKET_AND_NOTIFICATIONS.md) - 실시간 업데이트 및 알림 설정
+- [데이터베이스 스키마](DATABASE_SCHEMA.md) - DB 구조 및 ER 다이어그램
 - [설치 및 설정 가이드](SETUP_GUIDE.md) - 처음부터 설정하는 방법
 - [시퀀스 다이어그램](SEQUENCE_DIAGRAMS.md) - 시스템 흐름과 API 상호작용
 - [구현 진행 상황](IMPLEMENTATION_PROGRESS.md) - 상세 구현 상태

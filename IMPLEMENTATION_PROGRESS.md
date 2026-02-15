@@ -217,8 +217,19 @@
   - [x] OAuth 토큰 발급 구현
   - [x] 주식현재가 시세 API 연동
   - [x] 폴백 메커니즘 (API 키 없으면 mock 데이터)
-- [ ] 대시보드 실시간 업데이트 (WebSocket)
-- [ ] 알림 시스템 (이메일, 텔레그램)
+- [x] 대시보드 실시간 업데이트 (WebSocket)
+  - [x] WebSocket endpoint 구현 (`api/routes/websocket.py`)
+  - [x] Connection manager for broadcasting
+  - [x] Channel-based subscriptions (portfolio, thoughts, reports, alerts)
+  - [x] Frontend WebSocket hook (`dashboard/src/hooks/useWebSocket.ts`)
+  - [x] Dashboard real-time updates
+- [x] 알림 시스템 (이메일, 텔레그램)
+  - [x] Notification module (`analyzer/notifications.py`)
+  - [x] Email notifier with HTML templates
+  - [x] Telegram notifier with formatted messages
+  - [x] Priority-based filtering
+  - [x] Quiet hours support
+  - [x] Price alerts, portfolio summaries, error notifications
 
 ## 파일 구조
 
@@ -248,7 +259,8 @@ market-insight/
 │   │   └── cli.py ✅
 │   ├── analyzer/
 │   │   ├── llm_router.py ✅
-│   │   └── report_builder.py ✅
+│   │   ├── report_builder.py ✅
+│   │   └── notifications.py ✅
 │   ├── scheduler/
 │   │   └── daily_jobs.py ✅
 │   ├── config/
@@ -265,9 +277,11 @@ market-insight/
 ├── dashboard/
 │   ├── src/
 │   │   └── app/
-│   │       ├── layout.tsx ✅
-│   │       ├── page.tsx ✅
-│   │       └── globals.css ✅
+│   │   ├── layout.tsx ✅
+│   │   ├── page.tsx ✅
+│   │   ├── globals.css ✅
+│   │   └── hooks/
+│   │       └── useWebSocket.ts ✅
 │   ├── package.json ✅
 │   ├── tsconfig.json ✅
 │   ├── tailwind.config.ts ✅

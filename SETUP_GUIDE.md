@@ -10,9 +10,10 @@
 4. [Python 백엔드 설정](#python-백엔드-설정)
 5. [Next.js 대시보드 설정](#nextjs-대시보드-설정)
 6. [MCP 서버 설정 (Claude Desktop 연동)](#mcp-서버-설정-claude-desktop-연동)
-7. [데이터베이스 초기화](#데이터베이스-초기화)
-8. [서버 실행](#서버-실행)
-9. [문제 해결](#문제-해결)
+7. [WebSocket 및 알림 시스템 설정](#websocket-및-알림-시스템-설정)
+8. [데이터베이스 초기화](#데이터베이스-초기화)
+9. [서버 실행](#서버-실행)
+10. [문제 해결](#문제-해결)
 
 ---
 
@@ -271,6 +272,23 @@ TELEGRAM_CHAT_ID=your_chat_id
 
 # Anthropic Claude (선택 사항)
 ANTHROPIC_API_KEY=your_api_key
+
+# Notification Settings (선택 사항)
+NOTIFICATION_EMAIL_ENABLED=false
+NOTIFICATION_EMAIL_HOST=smtp.gmail.com
+NOTIFICATION_EMAIL_PORT=587
+NOTIFICATION_EMAIL_USERNAME=your_email@gmail.com
+NOTIFICATION_EMAIL_PASSWORD=your_app_password_here
+NOTIFICATION_EMAIL_FROM=your_email@gmail.com
+NOTIFICATION_EMAIL_TO=recipient1@example.com,recipient2@example.com
+
+NOTIFICATION_TELEGRAM_ENABLED=false
+NOTIFICATION_TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+NOTIFICATION_TELEGRAM_CHAT_ID=your_telegram_chat_id_here
+
+NOTIFICATION_NOTIFICATION_MIN_PRIORITY=normal
+NOTIFICATION_QUIET_HOURS_START=22
+NOTIFICATION_QUIET_HOURS_END=8
 ```
 
 ### 4. 데이터베이스 초기화
@@ -458,6 +476,104 @@ docker-compose ps
 ```bash
 cd market-insight/backend
 uv run python -c "from storage.db import init_database; init_database()"
+```
+
+---
+
+## WebSocket 및 알림 시스템 설정
+
+### WebSocket 실시간 업데이트
+
+WebSocket을 사용하면 대시보드에서 실시간으로 데이터 업데이트를 받을 수 있습니다.
+
+#### WebSocket 엔드포인트
+
+```
+ws://localhost:3000/api/v1/ws
+```
+
+#### 채널
+
+클라이언트는 다음 채널을 구독할 수 있습니다:
+
+- `portfolio`: 포트폴리오 업데이트
+- `thoughts`: 새로운 생각
+- `reports`: 새로운 리포트
+- `alerts`: 가격 알림 및 알림
+
+#### 연결 테스트
+
+```bash
+# WebSocket 연결 상태 확인
+curl http://localhost:3000/api/v1/connections
+```
+
+### 알림 시스템 설정
+
+#### 이메일 알림 설정
+
+Gmail을 사용하는 경우 앱 비밀번호가 필요합니다:
+
+1. [Google 계정 보안](https://myaccount.google.com/security) 접속
+2. 2단계 인증 활성화
+3. 앱 비밀번호 생성
+4. `.env` 파일에 설정:
+
+```env
+NOTIFICATION_EMAIL_ENABLED=true
+NOTIFICATION_EMAIL_USERNAME=your_email@gmail.com
+NOTIFICATION_EMAIL_PASSWORD=your_app_password_here
+NOTIFICATION_EMAIL_FROM=your_email@gmail.com
+NOTIFICATION_EMAIL_TO=recipient1@example.com,recipient2@example.com
+```
+
+#### 텔레그램 알림 설정
+
+1. [@BotFather](https://t.me/botfather)에서 봇 생성
+2. 봇 토큰 발급
+3. 봇에게 메시지 보내기
+4. `https://api.telegram.org/bot<token>/getUpdates`로 채팅 ID 확인
+5. `.env` 파일에 설정:
+
+```env
+NOTIFICATION_TELEGRAM_ENABLED=true
+NOTIFICATION_TELEGRAM_BOT_TOKEN=your_bot_token
+NOTIFICATION_TELEGRAM_CHAT_ID=your_chat_id
+```
+
+#### 우선순위 설정
+
+알림 우선순위: `low`, `normal`, `high`, `urgent`
+
+```env
+NOTIFICATION_NOTIFICATION_MIN_PRIORITY=normal
+```
+
+#### 조용한 시간 설정
+
+특정 시간대에 알림을 받지 않으려면 설정:
+
+```env
+NOTIFICATION_QUIET_HOURS_START=22  # 10 PM
+NOTIFICATION_QUIET_HOURS_END=8     # 8 AM
+```
+
+참고: `urgent` 우선순위 알림은 조용한 시간에도 전송됩니다.
+
+### 알림 테스트
+
+```python
+from analyzer.notifications import send_notification, NotificationType, NotificationPriority
+
+# 테스트 알림 전송
+result = await send_notification(
+    title="테스트 알림",
+    message="이것은 테스트 알림입니다",
+    notification_type=NotificationType.PORTFOLIO_UPDATE,
+    priority=NotificationPriority.NORMAL
+)
+
+print(result)  # {"email": True, "telegram": True}
 ```
 
 ---
@@ -749,6 +865,7 @@ python scheduler/daily_jobs.py
 
 ## 추가 리소스
 
+- [WebSocket 및 알림 시스템 가이드](WEBSOCKET_AND_NOTIFICATIONS.md) - 실시간 업데이트 및 알림 설정
 - [시퀀스 다이어그램](SEQUENCE_DIAGRAMS.md) - 시스템 흐름 이해
 - [구현 진행 상황](IMPLEMENTATION_PROGRESS.md) - 상세 구현 상태
 - [배포 매뉴얼](DEPLOYMENT_MANUAL.md) - 프로덕션 배포 가이드
