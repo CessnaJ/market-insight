@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { TrendingUp, TrendingDown, DollarSign, FileText, RefreshCw } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, FileText, RefreshCw, Brain, Layout } from "lucide-react";
+import Link from "next/link";
 
 // Types
 interface PortfolioHolding {
@@ -72,7 +73,32 @@ export default function Dashboard() {
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-900">Market Insight</h1>
+            <div className="flex items-center gap-8">
+              <h1 className="text-2xl font-bold text-gray-900">Market Insight</h1>
+              <nav className="flex items-center gap-4">
+                <Link
+                  href="/"
+                  className="text-gray-600 hover:text-gray-900 flex items-center gap-1 text-sm font-medium"
+                >
+                  <Layout size={16} />
+                  대시보드
+                </Link>
+                <Link
+                  href="/thoughts"
+                  className="text-gray-600 hover:text-gray-900 flex items-center gap-1 text-sm font-medium"
+                >
+                  <Brain size={16} />
+                  생각
+                </Link>
+                <Link
+                  href="/reports"
+                  className="text-gray-600 hover:text-gray-900 flex items-center gap-1 text-sm font-medium"
+                >
+                  <FileText size={16} />
+                  리포트
+                </Link>
+              </nav>
+            </div>
             <button
               onClick={fetchPortfolio}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"

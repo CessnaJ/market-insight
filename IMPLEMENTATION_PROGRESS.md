@@ -198,11 +198,25 @@
   - content, reports 라우터 포함
 
 ### Week 3 예정
-- [ ] MCP 서버 구현 (`mcp_servers/`)
-- [ ] 대시보드 기능 확장 (생각 기록 UI, 리포트 조회)
-- [ ] Telegram Bot 구현 (`interface/telegram_bot.py`)
-  - `uv pip install -e ".[telegram]"` 설치 필요
-- [ ] KIS API 연동 (한국투자증권 OpenAPI)
+- [x] MCP 서버 구현 (`mcp_servers/`)
+  - [x] Portfolio MCP Server (`portfolio_mcp/server.py`)
+  - [x] Memory MCP Server (`memory_mcp/server.py`)
+  - [x] Content MCP Server (`content_mcp/server.py`)
+  - [x] MCP 서버 README (`mcp_servers/README.md`)
+  - [x] pyproject.toml에 mcp 의존성 추가
+- [x] 대시보드 기능 확장 (생각 기록 UI, 리포트 조회)
+  - [x] 생각 기록 페이지 (`dashboard/src/app/thoughts/page.tsx`)
+  - [x] 리포트 조회 페이지 (`dashboard/src/app/reports/page.tsx`)
+  - [x] 네비게이션 추가
+- [x] Telegram Bot 구현 (`interface/telegram_bot.py`)
+  - [x] 기본 명령어 (/start, /portfolio, /think, /recall, /report, /ask, /help)
+  - [x] 자동 생각 기록 (일반 메시지)
+  - [x] LLM 기반 분류
+  - [x] 벡터 검색 통합
+- [x] KIS API 연동 (한국투자증권 OpenAPI)
+  - [x] OAuth 토큰 발급 구현
+  - [x] 주식현재가 시세 API 연동
+  - [x] 폴백 메커니즘 (API 키 없으면 mock 데이터)
 - [ ] 대시보드 실시간 업데이트 (WebSocket)
 - [ ] 알림 시스템 (이메일, 텔레그램)
 

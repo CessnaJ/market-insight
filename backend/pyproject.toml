@@ -25,6 +25,11 @@ dependencies = [
     "watchdog>=5.0.0",
 ]
 
+# MCP (Model Context Protocol) for Claude Desktop integration
+mcp = [
+    "mcp>=1.0.0",
+]
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8.3.0",
