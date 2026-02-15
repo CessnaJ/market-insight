@@ -1,0 +1,42 @@
+# Portfolio Holdings (보유 종목)
+portfolio:
+  korean:
+    - ticker: "005930"
+      name: "삼성전자"
+      shares: 0
+      avg_price: 0
+    - ticker: "035720"
+      name: "카카오"
+      shares: 0
+      avg_price: 0
+    - ticker: "000660"
+      name: "SK하이닉스"
+      shares: 0
+      avg_price: 0
+  us:
+    - ticker: "NVDA"
+      name: "NVIDIA"
+      shares: 0
+      avg_price: 0
+    - ticker: "PLTR"
+      name: "Palantir"
+      shares: 0
+      avg_price: 0
+    - ticker: "TSLA"
+      name: "Tesla"
+      shares: 0
+      avg_price: 0
+
+# Watchlist (관심종목 - 미보유)
+watchlist:
+  korean:
+    - ticker: "051910"
+      name: "LG화학"
+      reason: "배터리 수요"
+  us:
+    - ticker: "MSFT"
+      name: "Microsoft"
+      reason: "AI 인프라"
+    - ticker: "GOOGL"
+      name: "Alphabet"
+      reason: "AI/Cloud"

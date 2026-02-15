@@ -1,0 +1,33 @@
+# Content Collection Sources
+
+# YouTube Channels (RSS Feed)
+youtube:
+  - channel_id: "UC..."
+    name: "Example Channel 1"
+    category: "investment"
+    enabled: false
+  - channel_id: "UC..."
+    name: "Example Channel 2"
+    category: "tech"
+    enabled: false
+
+# Naver Blogs (RSS Feed)
+naver_blogs:
+  - name: "Example Blog"
+    rss: "https://rss.blog.naver.com/blogid"
+    enabled: false
+
+# Search Keywords (for content collection)
+search_keywords:
+  - "반도체 전망"
+  - "AI 투자"
+  - "금리 전망"
+  - "HBM"
+  - "데이터센터"
+  - "클라우드"
+
+# Content Collection Schedule
+collection_schedule:
+  youtube: "6h"  # Every 6 hours
+  naver_blog: "12h"
+  search: "daily"
