@@ -6,6 +6,7 @@ from storage.db import engine
 from sqlmodel import SQLModel, Field, Column
 from sqlalchemy import text
 import hashlib
+from analyzer.llm_router import get_embedding
 
 
 # ──── Vector Table Models ────
@@ -274,20 +275,22 @@ class VectorStore:
         """
         텍스트 임베딩
 
-        참고: 실제 구현에서는 Ollama nomic-embed-text 또는
-        다른 임베딩 모델을 사용해야 합니다.
-
-        현재는 간단한 해시 기반 임베딩 (개발용)
+        Ollama nomic-embed-text 모델을 사용하여 실제 임베딩 생성
         """
-        # TODO: Ollama 임베딩 구현
-        # import ollama
-        # response = ollama.embeddings(
-        #     model="nomic-embed-text",
-        #     prompt=text
-        # )
-        # return response["embedding"]
+        try:
+            # Ollama를 사용한 실제 임베딩
+            return get_embedding(text)
+        except Exception as e:
+            # Ollama 연결 실패 시 해시 기반 임베딩 (폴백)
+            print(f"Warning: Ollama embedding failed ({e}), using hash-based fallback")
+            return self._hash_embedding(text)
 
-        # 개발용: 간단한 해시 기반 임베딩
+    def _hash_embedding(self, text: str) -> List[float]:
+        """
+        해시 기반 임베딩 (폴백용)
+
+        Ollama 연결 실패 시 사용하는 개발용 임베딩
+        """
         hash_obj = hashlib.sha256(text.encode())
         hash_hex = hash_obj.hexdigest()
 

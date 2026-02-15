@@ -8,6 +8,7 @@ from rich.table import Table
 from rich.panel import Panel
 
 from storage.db import get_session
+from storage.models import DailyReport
 from collector.thought_logger import ThoughtLogger, ThoughtType, log_thought, search_thoughts
 from collector.stock_tracker import StockTracker
 
@@ -225,6 +226,204 @@ def collect():
         console.print(f"관심종목: {len(result['watchlist'])}개")
 
     asyncio.run(run())
+
+
+# ──── Content Collection Commands ────
+@cli.group()
+def content():
+    """콘텐츠 수집 관련 명령어"""
+    pass
+
+
+@content.command()
+def youtube():
+    """YouTube 채널에서 콘텐츠 수집"""
+    from collector.youtube_collector import YouTubeCollector
+
+    console.print("YouTube 콘텐츠 수집 중...")
+
+    collector = YouTubeCollector()
+    results = collector.collect_all()
+
+    total = sum(len(items) for items in results.values())
+    console.print(f"[green]✅ 수집 완료[/green]")
+    console.print(f"채널: {len(results)}개")
+    console.print(f"동영상: {total}개")
+
+    for channel, items in results.items():
+        console.print(f"  - {channel}: {len(items)}개")
+
+
+@content.command()
+def naver():
+    """네이버 블로그에서 콘텐츠 수집"""
+    from collector.naver_blog_collector import NaverBlogCollector
+
+    console.print("네이버 블로그 콘텐츠 수집 중...")
+
+    collector = NaverBlogCollector()
+    results = collector.collect_all()
+
+    total = sum(len(items) for items in results.values())
+    console.print(f"[green]✅ 수집 완료[/green]")
+    console.print(f"블로그: {len(results)}개")
+    console.print(f"게시글: {total}개")
+
+    for blog, items in results.items():
+        console.print(f"  - {blog}: {len(items)}개")
+
+
+@content.command()
+@click.option("--limit", "-n", default=10, help="반환할 개수")
+def list(limit: int):
+    """최근 수집된 콘텐츠 목록"""
+    from storage.db import get_recent_contents
+
+    with next(get_session()) as session:
+        contents = get_recent_contents(session, limit)
+
+    if not contents:
+        console.print("[yellow]수집된 콘텐츠가 없습니다.[/yellow]")
+        return
+
+    table = Table(title="📰 최근 콘텐츠")
+    table.add_column("출처", style="cyan")
+    table.add_column("제목", style="white")
+    table.add_column("날짜", style="dim")
+
+    for content in contents:
+        source_name = content.source_name or content.source_type
+        table.add_row(
+            source_name,
+            content.title[:40] + "..." if len(content.title) > 40 else content.title,
+            content.collected_at.strftime("%Y-%m-%d %H:%M")
+        )
+
+    console.print(table)
+
+
+# ──── Report Commands ────
+@cli.group()
+def report():
+    """리포트 생성 관련 명령어"""
+    pass
+
+
+@report.command()
+@click.option("--date", "-d", help="대상 날짜 (YYYY-MM-DD)")
+def daily(date: Optional[str]):
+    """일일 리포트 생성"""
+    from datetime import datetime
+    from analyzer.report_builder import generate_daily_report
+
+    target_date = None
+    if date:
+        target_date = datetime.strptime(date, "%Y-%m-%d").date()
+
+    console.print("일일 리포트 생성 중...")
+
+    report = generate_daily_report(target_date)
+
+    console.print(f"[green]✅ 리포트 생성 완료[/green]")
+    console.print(f"날짜: {report.date}")
+
+    # Display report
+    console.print(Panel(report.report_markdown, title=f"📊 일일 리포트 ({report.date})"))
+
+
+@report.command()
+@click.option("--date", "-d", help="대상 날짜 (YYYY-MM-DD)")
+def weekly(date: Optional[str]):
+    """주간 리포트 생성"""
+    from datetime import datetime
+    from analyzer.report_builder import generate_weekly_report
+
+    target_date = None
+    if date:
+        target_date = datetime.strptime(date, "%Y-%m-%d").date()
+
+    console.print("주간 리포트 생성 중...")
+
+    report = generate_weekly_report(target_date)
+
+    console.print(f"[green]✅ 리포트 생성 완료[/green]")
+    console.print(f"날짜: {report.date}")
+
+    # Display report
+    console.print(Panel(report.report_markdown, title=f"📊 주간 리포트"))
+
+
+@report.command()
+@click.option("--limit", "-n", default=5, help="반환할 개수")
+def list_reports(limit: int):
+    """최근 리포트 목록"""
+    from storage.db import get_latest_daily_report
+    from sqlmodel import select
+
+    with next(get_session()) as session:
+        reports = session.exec(
+            select(DailyReport)
+            .order_by(DailyReport.date.desc())
+            .limit(limit)
+        ).all()
+
+    if not reports:
+        console.print("[yellow]생성된 리포트가 없습니다.[/yellow]")
+        return
+
+    table = Table(title="📊 최근 리포트")
+    table.add_column("날짜", style="cyan")
+    table.add_column("요약", style="white")
+
+    for report in reports:
+        summary = report.report_markdown[:50] + "..." if len(report.report_markdown) > 50 else report.report_markdown
+        table.add_row(str(report.date), summary)
+
+    console.print(table)
+
+
+# ──── Scheduler Commands ────
+@cli.group()
+def scheduler():
+    """스케줄러 관련 명령어"""
+    pass
+
+
+@scheduler.command()
+def start():
+    """스케줄러 시작"""
+    from scheduler.daily_jobs import start_scheduler
+
+    console.print("스케줄러 시작 중...")
+    console.print("[yellow]Ctrl+C로 종료[/yellow]")
+
+    try:
+        start_scheduler()
+        import time
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        console.print("\n[yellow]스케줄러 종료[/yellow]")
+
+
+@scheduler.command()
+def jobs():
+    """예약된 작업 목록"""
+    from scheduler.daily_jobs import list_jobs
+
+    console.print("예약된 작업:")
+    list_jobs()
+
+
+@scheduler.command()
+@click.argument("job_id")
+def run(job_id: str):
+    """작업 즉시 실행"""
+    from scheduler.daily_jobs import run_job
+
+    console.print(f"작업 실행 중: {job_id}")
+    run_job(job_id)
+    console.print(f"[green]✅ 작업 완료[/green]")
 
 
 if __name__ == "__main__":

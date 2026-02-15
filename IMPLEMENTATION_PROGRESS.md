@@ -134,20 +134,51 @@
   inv think "테스트 메모"
   ```
 
-### Week 2 예정
-- [ ] YouTube 콘텐츠 수집기 (`collector/youtube_collector.py`)
-- [ ] 네이버 블로그 수집기 (`collector/naver_blog_collector.py`)
-- [ ] 일일 리포트 생성기 (`analyzer/report_builder.py`)
-- [ ] 스케줄러 (`scheduler/daily_jobs.py`)
-- [ ] LLM 라우터 (`analyzer/llm_router.py`)
-- [ ] Ollama 임베딩 연동 (nomic-embed-text)
+### Week 2 완료 ✅
+- [x] YouTube 콘텐츠 수집기 (`collector/youtube_collector.py`)
+  - RSS feed 파싱
+  - 동영상 정보 추출 (제목, 설명, URL)
+  - LLM 기반 요약 및 엔티티 추출
+  - 벡터 저장소에 임베딩 저장
+- [x] 네이버 블로그 수집기 (`collector/naver_blog_collector.py`)
+  - RSS feed 파싱
+  - 블로그 게시글 정보 추출
+  - LLM 기반 요약 및 엔티티 추출
+  - 벡터 저장소에 임베딩 저장
+- [x] 일일/주간 리포트 생성기 (`analyzer/report_builder.py`)
+  - 포트폴리오 데이터 수집
+  - 최근 생각 및 콘텐츠 요약
+  - LLM 기반 리포트 생성
+  - 과거 유사 생각 검색 (주간 리포트)
+- [x] 스케줄러 (`scheduler/daily_jobs.py`)
+  - YouTube 수집 (6시간마다)
+  - 네이버 블로그 수집 (12시간마다)
+  - 주식 가격 추적 (장중 1시간마다)
+  - 일일 리포트 생성 (매일 8시)
+  - 주간 리포트 생성 (일요일 9시)
+  - 일일 스냅샷 생성 (매일 6시)
+- [x] LLM 라우터 (`analyzer/llm_router.py`)
+  - Ollama 지원 (llama3.2, nomic-embed-text)
+  - Anthropic Claude 지원 (선택적)
+  - 텍스트 생성
+  - 임베딩 생성
+  - 구조화된 출력 (JSON)
+  - 생각 분류
+  - 콘텐츠 요약
+  - 엔티티 추출
+- [x] Ollama 임베딩 연동 (nomic-embed-text)
+  - vector_store.py 업데이트
+  - 해시 기반 임베딩에서 실제 임베딩으로 변경
+  - 폴백 메커니즘 (Ollama 연결 실패 시 해시 기반 사용)
 
 ### Week 3 예정
 - [ ] MCP 서버 구현 (`mcp_servers/`)
-- [ ] 주간 심층 리포트
 - [ ] 대시보드 기능 확장 (생각 기록 UI, 리포트 조회)
 - [ ] Telegram Bot 구현 (`interface/telegram_bot.py`)
   - `uv pip install -e ".[telegram]"` 설치 필요
+- [ ] KIS API 연동 (한국투자증권 OpenAPI)
+- [ ] 대시보드 실시간 업데이트 (WebSocket)
+- [ ] 알림 시스템 (이메일, 텔레그램)
 
 ## 파일 구조
 
@@ -161,16 +192,25 @@ market-insight/
 │   │   ├── main.py ✅
 │   │   └── routes/
 │   │       ├── portfolio.py ✅
-│   │       └── thoughts.py ✅
+│   │       ├── thoughts.py ✅
+│   │       ├── content.py ✅
+│   │       └── reports.py ✅
 │   ├── collector/
 │   │   ├── stock_tracker.py ✅
-│   │   └── thought_logger.py ✅
+│   │   ├── thought_logger.py ✅
+│   │   ├── youtube_collector.py ✅
+│   │   └── naver_blog_collector.py ✅
 │   ├── storage/
 │   │   ├── models.py ✅
 │   │   ├── db.py ✅
 │   │   └── vector_store.py ✅
 │   ├── interface/
 │   │   └── cli.py ✅
+│   ├── analyzer/
+│   │   ├── llm_router.py ✅
+│   │   └── report_builder.py ✅
+│   ├── scheduler/
+│   │   └── daily_jobs.py ✅
 │   ├── config/
 │   │   ├── watchlist.yaml ✅
 │   │   ├── sources.yaml ✅
@@ -180,8 +220,6 @@ market-insight/
 │   │   └── reports/      # 생성된 리포트
 │   ├── logs/
 │   ├── mcp_servers/      # (예정) MCP 서버들
-│   ├── scheduler/        # (예정) 스케줄링
-│   ├── analyzer/         # (예정) 분석 엔진
 │   ├── pyproject.toml ✅
 │   └── .env.example ✅
 ├── dashboard/
@@ -208,12 +246,12 @@ market-insight/
 - 해결: `cd dashboard && npm install`
 
 ### Ollama 임베딩 (backend/)
-- 현재: 개발용 해시 기반 임베딩 사용
-- TODO: Ollama nomic-embed-text 모델 연동
+- 현재: Ollama nomic-embed-text 연동 완료 ✅
 - 해결:
   1. Ollama 설치: `brew install ollama`
   2. 모델 다운로드: `ollama pull nomic-embed-text`
-  3. `storage/vector_store.py`의 `_embed()` 메서드 수정
+  3. `storage/vector_store.py`의 `_embed()` 메서드 수정 완료
+  4. 폴백 메커니즘: Ollama 연결 실패 시 해시 기반 임베딩 사용
 
 ### PostgreSQL + pgvector (backend/)
 - 현재: PostgreSQL + pgvector로 마이그레이션 완료 ✅
