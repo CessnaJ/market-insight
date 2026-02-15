@@ -186,14 +186,14 @@ PostgreSQL + pgvector 컨테이너 설정
 - [x] 스케줄러 자동화
 - [x] LLM 라우터 (Ollama 연동)
 - [x] API Routes (Content, Reports)
-- [ ] MCP 서버 (Claude Desktop 연동)
-- [ ] Telegram Bot (생각 기록 인터페이스)
+- [x] MCP 서버 (Claude Desktop 연동)
+- [x] Telegram Bot (생각 기록 인터페이스)
 
-### Week 3 (예정)
-- [ ] MCP 서버 구현
-- [ ] 대시보드 기능 확장 (생각 기록 UI, 리포트 조회)
-- [ ] Telegram Bot 구현
-- [ ] KIS API 연동 (한국투자증권 OpenAPI)
+### Week 3
+- [x] MCP 서버 구현
+- [x] 대시보드 기능 확장 (생각 기록 UI, 리포트 조회)
+- [x] Telegram Bot 구현
+- [x] KIS API 연동 (한국투자증권 OpenAPI)
 - [ ] 대시보드 실시간 업데이트 (WebSocket)
 - [ ] 알림 시스템 (이메일, 텔레그램)
 

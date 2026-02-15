@@ -9,9 +9,10 @@
 3. [PostgreSQL + pgvector 설치](#postgresql--pgvector-설치)
 4. [Python 백엔드 설정](#python-백엔드-설정)
 5. [Next.js 대시보드 설정](#nextjs-대시보드-설정)
-6. [데이터베이스 초기화](#데이터베이스-초기화)
-7. [서버 실행](#서버-실행)
-8. [문제 해결](#문제-해결)
+6. [MCP 서버 설정 (Claude Desktop 연동)](#mcp-서버-설정-claude-desktop-연동)
+7. [데이터베이스 초기화](#데이터베이스-초기화)
+8. [서버 실행](#서버-실행)
+9. [문제 해결](#문제-해결)
 
 ---
 
@@ -319,6 +320,144 @@ touch .env.local
 
 # API URL 설정 (기본값: http://localhost:3000)
 echo "NEXT_PUBLIC_API_URL=http://localhost:3000" > .env.local
+```
+
+---
+
+## MCP 서버 설정 (Claude Desktop 연동)
+
+MCP (Model Context Protocol) 서버를 사용하면 Claude Desktop에서 Market Insight 시스템과 직접 상호작용할 수 있습니다.
+
+### 1. MCP 의존성 설치
+
+```bash
+cd market-insight/backend
+
+# MCP 의존성 설치
+uv pip install -e ".[mcp]"
+```
+
+### 2. Claude Desktop 설정
+
+Claude Desktop 설정 파일을 엽니다:
+
+```bash
+# macOS
+open ~/Library/Application\ Support/Claude/claude_desktop_config.json
+
+# 또는 직접 편집
+nano ~/Library/Application\ Support/Claude/claude_desktop_config.json
+```
+
+다음 설정을 추가합니다:
+
+```json
+{
+  "mcpServers": {
+    "portfolio": {
+      "command": "uv",
+      "args": [
+        "--directory", "/Users/cessnaj/Desktop/codes/market-insight/backend/mcp_servers/portfolio_mcp",
+        "run", "server.py"
+      ]
+    },
+    "memory": {
+      "command": "uv",
+      "args": [
+        "--directory", "/Users/cessnaj/Desktop/codes/market-insight/backend/mcp_servers/memory_mcp",
+        "run", "server.py"
+      ]
+    },
+    "content": {
+      "command": "uv",
+      "args": [
+        "--directory", "/Users/cessnaj/Desktop/codes/market-insight/backend/mcp_servers/content_mcp",
+        "run", "server.py"
+      ]
+    }
+  }
+}
+```
+
+**중요**: `/Users/cessnaj/Desktop/codes/market-insight`를 실제 프로젝트 경로로 변경하세요.
+
+### 3. Claude Desktop 재시작
+
+Claude Desktop을 재시작하면 MCP 서버가 자동으로 연결됩니다.
+
+### 4. MCP 서버 테스트
+
+Claude Desktop에서 다음과 같은 명령어를 사용할 수 있습니다:
+
+```
+"Show me my portfolio summary"
+"What are my recent thoughts about Samsung Electronics?"
+"Search for content about semiconductor stocks"
+"Log a new thought: I think AI stocks will continue to rise this quarter"
+```
+
+### 5. MCP 서버 기능
+
+#### Portfolio MCP Server
+- `get_portfolio_summary` - 포트폴리오 요약 조회
+- `get_stock_price` - 특정 종목 가격 조회
+- `get_portfolio_history` - 포트폴리오 수익률 히스토리
+- `log_transaction` - 매수/매도 기록
+- `get_holdings` - 보유 종목 목록
+
+#### Memory MCP Server
+- `log_thought` - 투자 생각 기록
+- `recall_thoughts` - 과거 생각 의미 검색
+- `get_thought_timeline` - 특정 종목/주제에 대한 생각 타임라인
+- `get_recent_thoughts` - 최근 생각 목록
+- `search_by_ticker` - 종목 관련 생각 검색
+
+#### Content MCP Server
+- `get_recent_contents` - 최근 수집된 콘텐츠 목록
+- `search_content` - 의미 기반 콘텐츠 검색
+- `get_content_stats` - 콘텐츠 통계
+- `search_by_source` - 특정 소스의 콘텐츠 검색
+
+### 6. MCP 서버 개별 테스트
+
+각 MCP 서버를 개별적으로 테스트할 수 있습니다:
+
+```bash
+# Portfolio MCP Server
+cd market-insight/backend/mcp_servers/portfolio_mcp
+uv run server.py
+
+# Memory MCP Server
+cd market-insight/backend/mcp_servers/memory_mcp
+uv run server.py
+
+# Content MCP Server
+cd market-insight/backend/mcp_servers/content_mcp
+uv run server.py
+```
+
+### 7. MCP 서버 문제 해결
+
+#### MCP 서버가 Claude Desktop에 표시되지 않음
+
+1. Claude Desktop을 재시작합니다
+2. 설정 파일 경로가 올바른지 확인합니다
+3. MCP 서버가 개별적으로 실행되는지 테스트합니다
+
+#### 데이터베이스 연결 오류
+
+1. PostgreSQL 컨테이너가 실행 중인지 확인합니다:
+```bash
+cd market-insight
+docker-compose ps
+```
+
+2. `.env` 파일에 올바른 데이터베이스 설정이 있는지 확인합니다
+
+3. 데이터베이스가 초기화되었는지 확인합니다:
+```bash
+cd market-insight/backend
+uv run python -c "from storage.db import init_database; init_database()"
 ```
 
 ---

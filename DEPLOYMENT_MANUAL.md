@@ -9,11 +9,12 @@
 3. [Ollama 설치](#ollama-설치)
 4. [백엔드 설정](#백엔드-설정)
 5. [대시보드 설정](#대시보드-설정)
-6. [시스템 실행](#시스템-실행)
-7. [CLI 명령어 가이드](#cli-명령어-가이드)
-8. [API 엔드포인트](#api-엔드포인트)
-9. [스케줄러 설정](#스케줄러-설정)
-10. [문제 해결](#문제-해결)
+6. [MCP 서버 설정 (Claude Desktop)](#mcp-서버-설정-claude-desktop)
+7. [시스템 실행](#시스템-실행)
+8. [CLI 명령어 가이드](#cli-명령어-가이드)
+9. [API 엔드포인트](#api-엔드포인트)
+10. [스케줄러 설정](#스케줄러-설정)
+11. [문제 해결](#문제-해결)
 
 ---
 
@@ -224,6 +225,95 @@ TypeScript 에러가 발생하면 다음을 실행합니다:
 
 ```bash
 npm install
+```
+
+---
+
+## MCP 서버 설정 (Claude Desktop)
+
+MCP (Model Context Protocol) 서버를 사용하면 Claude Desktop에서 Market Insight 시스템과 직접 상호작용할 수 있습니다.
+
+### 1. MCP 의존성 설치
+
+```bash
+cd backend
+
+# MCP 의존성 설치
+uv pip install -e ".[mcp]"
+```
+
+### 2. Claude Desktop 설정
+
+Claude Desktop 설정 파일을 엽니다:
+
+```bash
+# macOS
+open ~/Library/Application\ Support/Claude/claude_desktop_config.json
+```
+
+다음 설정을 추가합니다:
+
+```json
+{
+  "mcpServers": {
+    "portfolio": {
+      "command": "uv",
+      "args": [
+        "--directory", "/path/to/market-insight/backend/mcp_servers/portfolio_mcp",
+        "run", "server.py"
+      ]
+    },
+    "memory": {
+      "command": "uv",
+      "args": [
+        "--directory", "/path/to/market-insight/backend/mcp_servers/memory_mcp",
+        "run", "server.py"
+      ]
+    },
+    "content": {
+      "command": "uv",
+      "args": [
+        "--directory", "/path/to/market-insight/backend/mcp_servers/content_mcp",
+        "run", "server.py"
+      ]
+    }
+  }
+}
+```
+
+**중요**: `/path/to/market-insight`를 실제 프로젝트 경로로 변경하세요.
+
+### 3. Claude Desktop 재시작
+
+Claude Desktop을 재시작하면 MCP 서버가 자동으로 연결됩니다.
+
+### 4. 사용 예시
+
+Claude Desktop에서 다음과 같은 명령어를 사용할 수 있습니다:
+
+```
+"Show me my portfolio summary"
+"What are my recent thoughts about Samsung Electronics?"
+"Search for content about semiconductor stocks"
+"Log a new thought: I think AI stocks will continue to rise this quarter"
+```
+
+### 5. MCP 서버 테스트
+
+각 MCP 서버를 개별적으로 테스트할 수 있습니다:
+
+```bash
+# Portfolio MCP Server
+cd backend/mcp_servers/portfolio_mcp
+uv run server.py
+
+# Memory MCP Server
+cd backend/mcp_servers/memory_mcp
+uv run server.py
+
+# Content MCP Server
+cd backend/mcp_servers/content_mcp
+uv run server.py
 ```
 
 ---

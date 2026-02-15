@@ -28,20 +28,37 @@
 │  └──────────────────────────────────────────────────────────────┘  │
 └────────────────────────────────────────────────────────────────────┘
                            │
-          ┌────────────────┼────────────────┐
-          │                │                │
-┌─────────▼────────┐ ┌─────▼──────┐ ┌──────▼──────────────────────────┐
-│   Collection    │ │  Storage   │ │       Analysis Engine          │
-│      Layer      │ │   Layer    │ │                                │
-├─────────────────┤ ├────────────┤ ├────────────────────────────────┤
-│ • StockTracker  │ │ PostgreSQL │ │ • LLM Router (Ollama/Claude)   │
-│ • YouTube      │ │   +        │ │ • Report Builder               │
-│   Collector     │ │  pgvector  │ │ • Content Summarizer          │
-│ • Naver Blog    │ │            │ │ • Insight Generator           │
-│   Collector     │ │            │ │ • Entity Extractor            │
-│ • Thought       │ │            │ │                                │
-│   Logger        │ │            │ │                                │
-└─────────────────┘ └────────────┘ └────────────────────────────────┘
+           ┌───────────────┼───────────────┐
+           │               │               │
+┌──────────▼────────┐ ┌─────▼──────┐ ┌──────▼──────────────────────────┐
+│   Collection     │ │  Storage   │ │       Analysis Engine          │
+│      Layer       │ │   Layer    │ │                                │
+├──────────────────┤ ├────────────┤ ├────────────────────────────────┤
+│ • StockTracker   │ │ PostgreSQL │ │ • LLM Router (Ollama/Claude)   │
+│ • YouTube        │ │   +        │ │ • Report Builder               │
+│   Collector      │ │  pgvector  │ │ • Content Summarizer          │
+│ • Naver Blog     │ │            │ │ • Insight Generator           │
+│   Collector      │ │            │ │ • Entity Extractor            │
+│ • Thought        │ │            │ │                                │
+│   Logger         │ │            │ │                                │
+└──────────────────┘ └────────────┘ └────────────────────────────────┘
+                           │
+┌──────────────────────────▼────────────────────────────────────────────┐
+│                     Interface Layer (MCP)                             │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                 │
+│  │   Portfolio  │  │   Memory     │  │   Content    │                 │
+│  │   MCP Server │  │   MCP Server │  │   MCP Server │                 │
+│  └──────────────┘  └──────────────┘  └──────────────┘                 │
+└────────────────────────────────────────────────────────────────────────┘
+                           │
+┌──────────────────────────▼────────────────────────────────────────────┐
+│                   Claude Desktop Integration                          │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │                    Claude Desktop                             │  │
+│  │  - Natural Language Interface                                │  │
+│  │  - MCP Protocol Communication                                 │  │
+│  └──────────────────────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -500,6 +517,160 @@ sequenceDiagram
 
 ---
 
+## 8. MCP 서버 흐름 (MCP Server Flow)
+
+### 8.1 Portfolio MCP Server - 포트폴리오 요약 조회
+
+```mermaid
+sequenceDiagram
+    participant Claude as Claude Desktop
+    participant Portfolio as Portfolio MCP
+    participant DB as PostgreSQL
+
+    Claude->>Portfolio: get_portfolio_summary()
+    
+    Portfolio->>DB: Get portfolio holdings
+    DB-->>Portfolio: Holdings data
+    
+    Portfolio->>DB: Get latest stock prices
+    DB-->>Portfolio: Stock prices
+    
+    Portfolio->>Portfolio: Calculate total value, P&L
+    
+    Portfolio-->>Claude: {
+        total_value: 1000000,
+        total_pnl: 50000,
+        total_pnl_pct: 5.0,
+        holdings: [...]
+    }
+```
+
+### 8.2 Memory MCP Server - 생각 기록
+
+```mermaid
+sequenceDiagram
+    participant Claude as Claude Desktop
+    participant Memory as Memory MCP
+    participant DB as PostgreSQL
+    participant Vector as pgvector
+
+    Claude->>Memory: log_thought(content, type, tickers, confidence)
+    
+    Memory->>DB: Create Thought record
+    Note over DB: Store thought metadata
+    
+    Memory->>Vector: Generate embedding
+    Note over Vector: Use nomic-embed-text model
+    
+    Memory->>Vector: Store thought embedding
+    Note over Vector: Store with thought_id for semantic search
+    
+    Memory-->>Claude: {
+        message: "Thought logged successfully",
+        thought_id: "...",
+        content: "...",
+        type: "..."
+    }
+```
+
+### 8.3 Memory MCP Server - 의미 기반 생각 검색
+
+```mermaid
+sequenceDiagram
+    participant Claude as Claude Desktop
+    participant Memory as Memory MCP
+    participant Vector as pgvector
+    participant DB as PostgreSQL
+
+    Claude->>Memory: recall_thoughts(query, limit)
+    
+    Memory->>Vector: Generate query embedding
+    Vector-->>Memory: query_embedding
+    
+    Memory->>Vector: Search similar thoughts
+    Note over Vector: Vector similarity search
+    
+    Vector-->>Memory: Similar thought IDs with distances
+    
+    Memory->>DB: Get thoughts by IDs
+    DB-->>Memory: Thought data
+    
+    Memory-->>Claude: [
+        {
+            id: "...",
+            content: "...",
+            metadata: {...},
+            relevance: 0.95
+        }, ...
+    ]
+```
+
+### 8.4 Content MCP Server - 의미 기반 콘텐츠 검색
+
+```mermaid
+sequenceDiagram
+    participant Claude as Claude Desktop
+    participant Content as Content MCP
+    participant Vector as pgvector
+
+    Claude->>Content: search_content(query, limit)
+    
+    Content->>Vector: Generate query embedding
+    Vector-->>Content: query_embedding
+    
+    Content->>Vector: Search related content
+    Note over Vector: Vector similarity search
+    
+    Vector-->>Content: Content IDs with distances
+    
+    Content-->>Claude: [
+        {
+            id: "...",
+            content: "...",
+            metadata: {...},
+            relevance: 0.92
+        }, ...
+    ]
+```
+
+### 8.5 MCP 서버 통합 흐름 - 복합 쿼리
+
+```mermaid
+sequenceDiagram
+    participant Claude as Claude Desktop
+    participant Portfolio as Portfolio MCP
+    participant Memory as Memory MCP
+    participant Content as Content MCP
+    participant DB as PostgreSQL
+    participant Vector as pgvector
+
+    Claude->>Portfolio: get_stock_price(ticker="005930")
+    Portfolio->>DB: Get latest stock price
+    DB-->>Portfolio: Stock price data
+    Portfolio-->>Claude: {ticker, price, change_pct, ...}
+    
+    Claude->>Memory: search_by_ticker(ticker="005930")
+    Memory->>DB: Get thoughts by ticker
+    DB-->>Memory: Thoughts data
+    Memory-->>Claude: [{id, content, type, ...}, ...]
+    
+    Claude->>Content: search_by_source(source_type="youtube", limit=5)
+    Content->>DB: Get YouTube contents
+    DB-->>Content: Content data
+    Content-->>Claude: [{id, title, summary, ...}, ...]
+    
+    Claude->>Memory: recall_thoughts(query="반도체", limit=3)
+    Memory->>Vector: Generate query embedding
+    Memory->>Vector: Search similar thoughts
+    Vector-->>Memory: Similar thoughts
+    Memory-->>Claude: [{id, content, relevance}, ...]
+    
+    Claude-->>Claude: Generate comprehensive analysis
+    Note over Claude: Combine portfolio data,<br/>thoughts, and content<br/>to provide insights
+```
+
+---
+
 ## 데이터 흐름 요약 (Data Flow Summary)
 
 ```
@@ -513,6 +684,11 @@ sequenceDiagram
 │  • YouTube RSS      • pgvector         • Report Builder  • Telegram Bot     │
 │  • Naver Blog RSS   • Raw data files   • Summarizer      • Web API          │
 │  • User Input       • Markdown files   • Extractor       • Dashboard        │
+│                                                                     ↓   │
+│                                                            • MCP Servers      │
+│                                                            - Portfolio       │
+│                                                            - Memory          │
+│                                                            - Content         │
 │                                                                             │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
@@ -582,6 +758,28 @@ sequenceDiagram
 │  • GET /reports/date/{target_date} - 날짜별 리포트                          │
 │  • POST /reports/generate/daily - 일일 리포트 생성                          │
 │  • POST /reports/generate/weekly - 주간 리포트 생성                         │
+│                                                                             │
+│  MCP Servers (Claude Desktop Integration)                                    │
+│                                                                             │
+│  Portfolio MCP Server                                                        │
+│  • get_portfolio_summary - 포트폴리오 요약                                  │
+│  • get_stock_price - 종목 가격 조회                                          │
+│  • get_portfolio_history - 포트폴리오 수익률 히스토리                       │
+│  • log_transaction - 매수/매도 기록                                         │
+│  • get_holdings - 보유 종목 목록                                            │
+│                                                                             │
+│  Memory MCP Server                                                           │
+│  • log_thought - 투자 생각 기록                                              │
+│  • recall_thoughts - 과거 생각 의미 검색                                     │
+│  • get_thought_timeline - 특정 종목/주제에 대한 생각 타임라인               │
+│  • get_recent_thoughts - 최근 생각 목록                                      │
+│  • search_by_ticker - 종목 관련 생각 검색                                    │
+│                                                                             │
+│  Content MCP Server                                                          │
+│  • get_recent_contents - 최근 수집된 콘텐츠 목록                             │
+│  • search_content - 의미 기반 콘텐츠 검색                                    │
+│  • get_content_stats - 콘텐츠 통계                                          │
+│  • search_by_source - 특정 소스의 콘텐츠 검색                                │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
