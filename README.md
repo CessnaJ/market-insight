@@ -121,12 +121,20 @@ PostgreSQL + pgvector 컨테이너 설정
 - SQLModel (PostgreSQL)
 - PostgreSQL + pgvector (벡터 저장소)
 - APScheduler (스케줄링)
+- Ollama (LLM, 임베딩)
 
 ### 프론트엔드
 - Next.js 14
 - TypeScript
 - Tailwind CSS
 - Recharts
+
+## 문서
+
+- [시퀀스 다이어그램](SEQUENCE_DIAGRAMS.md) - 시스템 흐름과 API 상호작용
+- [구현 진행 상황](IMPLEMENTATION_PROGRESS.md) - 상세 구현 상태
+- [배포 매뉴얼](DEPLOYMENT_MANUAL.md) - 배포 및 설정 가이드
+- [PostgreSQL 마이그레이션](MIGRATION_TO_POSTGRESQL.md) - DB 마이그레이션 가이드
 
 ## 개발 로드맵
 
@@ -139,18 +147,22 @@ PostgreSQL + pgvector 컨테이너 설정
 - [x] CLI 인터페이스
 - [x] Next.js 대시보드 기본 구조
 
-### Week 2 (예정)
-- [ ] YouTube/네이버 콘텐츠 수집
-- [ ] 일일 리포트 생성
-- [ ] 스케줄러 자동화
+### Week 2
+- [x] YouTube/네이버 콘텐츠 수집
+- [x] 일일/주간 리포트 생성
+- [x] 스케줄러 자동화
+- [x] LLM 라우터 (Ollama 연동)
+- [x] API Routes (Content, Reports)
 - [ ] MCP 서버 (Claude Desktop 연동)
 - [ ] Telegram Bot (생각 기록 인터페이스)
 
 ### Week 3 (예정)
-- [ ] 주간 심층 리포트
-- [ ] AI 대화 로그 수집
-- [ ] 대시보드 기능 확장
-- [ ] Telegram Bot 기능 확장 (검색, 요약 등)
+- [ ] MCP 서버 구현
+- [ ] 대시보드 기능 확장 (생각 기록 UI, 리포트 조회)
+- [ ] Telegram Bot 구현
+- [ ] KIS API 연동 (한국투자증권 OpenAPI)
+- [ ] 대시보드 실시간 업데이트 (WebSocket)
+- [ ] 알림 시스템 (이메일, 텔레그램)
 
 ## 라이선스
 

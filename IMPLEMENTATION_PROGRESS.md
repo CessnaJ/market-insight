@@ -40,7 +40,7 @@
 - [x] `api/main.py` 생성 (포트 3000)
   - CORS middleware
   - Health check endpoint
-  - Router includes (portfolio, thoughts)
+  - Router includes (portfolio, thoughts, content, reports)
 - [x] `api/routes/portfolio.py` 생성
   - GET /summary - 포트폴리오 요약
   - GET /holdings - 보유 종목 목록
@@ -57,6 +57,21 @@
   - DELETE /{thought_id} - 생각 삭제
   - POST /search - 의미 기반 검색
   - GET /ticker/{ticker} - 종목 관련 생각
+- [x] `api/routes/content.py` 생성
+  - GET /content/ - 최근 콘텐츠 목록
+  - GET /content/{content_id} - 특정 콘텐츠 조회
+  - GET /content/ticker/{ticker} - 종목 관련 콘텐츠
+  - POST /content/collect/youtube - YouTube 수집 시작
+  - POST /content/collect/naver - 네이버 블로그 수집 시작
+  - POST /content/collect/all - 전체 콘텐츠 수집 시작
+  - POST /content/search - 콘텐츠 검색
+- [x] `api/routes/reports.py` 생성
+  - GET /reports/ - 최근 리포트 목록
+  - GET /reports/latest - 최신 리포트
+  - GET /reports/{report_id} - 특정 리포트 조회
+  - GET /reports/date/{target_date} - 날짜별 리포트
+  - POST /reports/generate/daily - 일일 리포트 생성
+  - POST /reports/generate/weekly - 주간 리포트 생성
 
 ### Phase 3: 기본 인터페이스 ✅
 - [x] `interface/cli.py` 생성 (Click + Rich)
@@ -170,6 +185,17 @@
   - vector_store.py 업데이트
   - 해시 기반 임베딩에서 실제 임베딩으로 변경
   - 폴백 메커니즘 (Ollama 연결 실패 시 해시 기반 사용)
+
+### Week 2 완료 ✅ (API Routes)
+- [x] `api/routes/content.py` 생성
+  - 콘텐츠 조회 엔드포인트 (목록, 상세, 종목별)
+  - 콘텐츠 수집 엔드포인트 (YouTube, Naver, 전체)
+  - 콘텐츠 검색 엔드포인트
+- [x] `api/routes/reports.py` 생성
+  - 리포트 조회 엔드포인트 (목록, 최신, 상세, 날짜별)
+  - 리포트 생성 엔드포인트 (일일, 주간)
+- [x] `api/main.py` 업데이트
+  - content, reports 라우터 포함
 
 ### Week 3 예정
 - [ ] MCP 서버 구현 (`mcp_servers/`)
