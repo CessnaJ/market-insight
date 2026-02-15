@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { TrendingUp, TrendingDown, DollarSign, FileText, RefreshCw, Brain, Layout } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, FileText, RefreshCw, Brain, Layout, Wifi, WifiOff } from "lucide-react";
 import Link from "next/link";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 // Types
 interface PortfolioHolding {
@@ -31,6 +32,10 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
 
   const API_BASE = "http://localhost:3000/api/v1";
+  const WS_URL = "ws://localhost:3000/api/v1/ws";
+
+  // WebSocket connection
+  const { isConnected, lastMessage, connectionStatus } = useWebSocket(WS_URL);
 
   const fetchPortfolio = async () => {
     try {
@@ -46,6 +51,32 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
+
+  // Handle WebSocket messages
+  useEffect(() => {
+    if (lastMessage) {
+      switch (lastMessage.type) {
+        case "portfolio_update":
+          setPortfolio(lastMessage.data);
+          break;
+        case "price_update":
+          // Update specific stock price in portfolio
+          if (portfolio && lastMessage.ticker) {
+            setPortfolio({
+              ...portfolio,
+              holdings: portfolio.holdings.map(holding =>
+                holding.ticker === lastMessage.ticker
+                  ? { ...holding, current_price: lastMessage.data.price }
+                  : holding
+              ),
+            });
+          }
+          break;
+        default:
+          break;
+      }
+    }
+  }, [lastMessage, portfolio]);
 
   useEffect(() => {
     fetchPortfolio();
@@ -99,13 +130,25 @@ export default function Dashboard() {
                 </Link>
               </nav>
             </div>
-            <button
-              onClick={fetchPortfolio}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-            >
-              <RefreshCw size={16} />
-              Refresh
-            </button>
+            <div className="flex items-center gap-3">
+              {/* Connection Status */}
+              <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+                connectionStatus === "connected" ? "bg-green-100 text-green-700" :
+                connectionStatus === "connecting" ? "bg-yellow-100 text-yellow-700" :
+                connectionStatus === "error" ? "bg-red-100 text-red-700" :
+                "bg-gray-100 text-gray-700"
+              }`}>
+                {connectionStatus === "connected" ? <Wifi size={16} /> : <WifiOff size={16} />}
+                <span className="text-xs font-medium capitalize">{connectionStatus}</span>
+              </div>
+              <button
+                onClick={fetchPortfolio}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              >
+                <RefreshCw size={16} />
+                Refresh
+              </button>
+            </div>
           </div>
         </div>
       </header>

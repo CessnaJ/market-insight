@@ -58,12 +58,13 @@ async def health_check():
 
 
 # ──── API Routes ────
-from api.routes import portfolio, thoughts, content, reports
+from api.routes import portfolio, thoughts, content, reports, websocket
 
 app.include_router(portfolio.router, prefix="/api/v1/portfolio", tags=["Portfolio"])
 app.include_router(thoughts.router, prefix="/api/v1/thoughts", tags=["Thoughts"])
 app.include_router(content.router, prefix="/api/v1", tags=["Content"])
 app.include_router(reports.router, prefix="/api/v1", tags=["Reports"])
+app.include_router(websocket.router, prefix="/api/v1", tags=["WebSocket"])
 
 
 # ──── Root Endpoint ────
