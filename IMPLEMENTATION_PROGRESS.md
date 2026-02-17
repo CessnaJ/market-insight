@@ -1,6 +1,12 @@
 # 구현 진행 상황
 
-## 완료된 작업
+## 개요
+
+Market Insight 시스템의 모든 핵심 기능 구현이 완료되었습니다. 현재 설치 및 설정 단계만 남아 있습니다.
+
+---
+
+## 완료된 작업 (코드 기준)
 
 ### Phase 0: 기반 환경 세팅 ✅
 - [x] 프로젝트 디렉토리 구조 생성 (`backend/`, `dashboard/` 분리)
@@ -23,16 +29,18 @@
 - [x] `storage/vector_store.py` 생성 (PostgreSQL + pgvector)
   - VectorStore 클래스
   - add_thought(), add_content(), add_ai_chat()
-  - search_similar_thoughts(), search_related_content()
-  - 개발용 해시 기반 임베딩 (Ollama 연동 필요)
+  - search_similar_thoughts(), search_related_content(), search_ai_chats()
+  - Ollama 임베딩 연동 (nomic-embed-text)
+  - 폴백 메커니즘 (Ollama 연결 실패 시 해시 기반 임베딩)
 - [x] `collector/stock_tracker.py` 생성
-  - fetch_korean_stock() (KIS API - TODO)
+  - fetch_korean_stock() (KIS API + OAuth 토큰 발급 구현 완료)
   - fetch_us_stock() (Yahoo Finance)
   - track_portfolio(), track_watchlist()
+  - 폴백 메커니즘 (API 키 없으면 mock 데이터)
 
 ### Phase 1-B: 생각 기록 기능 ✅
 - [x] `collector/thought_logger.py` 생성
-  - ThoughtType enum (market_view, stock_idea, risk_concern, etc.)
+  - ThoughtType enum (market_view, stock_idea, risk_concern, ai_insight, content_note, general)
   - log(), get_thought(), search_thoughts()
   - Markdown 원본 저장
 
@@ -40,30 +48,32 @@
 - [x] `api/main.py` 생성 (포트 3000)
   - CORS middleware
   - Health check endpoint
-  - Router includes (portfolio, thoughts, content, reports)
+  - Router includes (portfolio, thoughts, content, reports, websocket)
+  - Lifespan manager (database initialization)
 - [x] `api/routes/portfolio.py` 생성
   - GET /summary - 포트폴리오 요약
   - GET /holdings - 보유 종목 목록
   - POST /holdings - 종목 추가
+  - PUT /holdings/{ticker} - 종목 업데이트
   - GET /prices/{ticker} - 종목 가격
   - POST /prices/fetch - 가격 수집
   - POST /transactions - 매수/매도 기록
-  - GET /snapshots - 일별 스냅샷
+  - GET /transactions - 거래 내역 조회
+  - 내 생각 -> 일별 스냅샷이 필요하지 않을까? 🐤
 - [x] `api/routes/thoughts.py` 생성
   - POST / - 생각 기록
   - GET / - 최근 생각 목록
   - GET /{thought_id} - 특정 생각 조회
-  - PUT /{thought_id} - 생각 업데이트
-  - DELETE /{thought_id} - 생각 삭제
+  - PUT /{thought_id} - 생각 업데이트 (outcome)
+  - DELETE /{thought_id} - 생각 삭제 (vector store에서도 삭제)
   - POST /search - 의미 기반 검색
-  - GET /ticker/{ticker} - 종목 관련 생각
 - [x] `api/routes/content.py` 생성
   - GET /content/ - 최근 콘텐츠 목록
   - GET /content/{content_id} - 특정 콘텐츠 조회
   - GET /content/ticker/{ticker} - 종목 관련 콘텐츠
-  - POST /content/collect/youtube - YouTube 수집 시작
-  - POST /content/collect/naver - 네이버 블로그 수집 시작
-  - POST /content/collect/all - 전체 콘텐츠 수집 시작
+  - POST /content/collect/youtube - YouTube 수집 시작 (background)
+  - POST /content/collect/naver - 네이버 블로그 수집 시작 (background)
+  - POST /content/collect/all - 전체 콘텐츠 수집 시작 (background)
   - POST /content/search - 콘텐츠 검색
 - [x] `api/routes/reports.py` 생성
   - GET /reports/ - 최근 리포트 목록
@@ -72,18 +82,33 @@
   - GET /reports/date/{target_date} - 날짜별 리포트
   - POST /reports/generate/daily - 일일 리포트 생성
   - POST /reports/generate/weekly - 주간 리포트 생성
+- [x] `api/routes/websocket.py` 생성
+  - WebSocket endpoint (/api/v1/ws)
+  - ConnectionManager 클래스 (active_connections, subscriptions)
+  - Channel-based subscriptions (portfolio, thoughts, reports, alerts)
+  - broadcast_portfolio_update(), broadcast_new_thought(), broadcast_new_report(), broadcast_alert(), broadcast_price_update()
+  - Manual broadcast endpoints (/broadcast/portfolio, /connections)
+  - Client message handling (subscribe, ping, get_portfolio)
 
 ### Phase 3: 기본 인터페이스 ✅
 - [x] `interface/cli.py` 생성 (Click + Rich)
-  - `inv portfolio` - 포트폴리오 현황
+  - `inv portfolio` - 포트폴리오 현황 (테이블 형태)
   - `inv price <ticker>` - 종목 가격 조회
-  - `inv think <content>` - 생각 기록
-  - `inv recall <query>` - 과거 생각 검색
+  - `inv think <content>` - 생각 기록 (옵션: type, tickers, confidence)
+  - `inv recall <query>` - 과거 생각 검색 (의미 기반)
   - `inv thoughts` - 최근 생각 목록
   - `inv init` - 데이터베이스 초기화
   - `inv collect` - 주식 가격 수집
+- [x] `interface/telegram_bot.py` 생성
+  - 기본 명령어 (/start, /portfolio, /think, /recall, /report, /ask, /help)
+  - 자동 생각 기록 (일반 메시지)
+  - LLM 기반 분류 (thought_type, tags, tickers)
+  - 벡터 검색 통합 (/recall)
+  - 포트폴리오 현황 표시 (/portfolio)
+  - 최신 리포트 표시 (/report)
+  - 자유 질문 (/ask)
 
-### Phase 4: Next.js 대시보드 (기본 구조) ✅
+### Phase 4: Next.js 대시보드 ✅
 - [x] `dashboard/package.json` 생성
   - Next.js 14, React 18, TypeScript
   - Recharts, Lucide React, Tailwind CSS
@@ -95,11 +120,102 @@
 - [x] `dashboard/src/app/layout.tsx` 생성
 - [x] `dashboard/src/app/page.tsx` 생성
   - 포트폴리오 요약 카드 (총 평가액, 총 손익, 수익률)
-  - 보유 종목 테이블
+  - 보유 종목 테이블 (Name, Shares, Avg Price, Current, Value, P&L)
+  - 네비게이션 (대시보드, 생각, 리포트)
+  - WebSocket 연결 상태 표시 (connected/connecting/disconnected/error)
   - Refresh 버튼
   - 로딩/에러 상태 처리
+  - Empty state 처리
+- [x] `dashboard/src/app/thoughts/page.tsx` 생성
+  - 생각 기록 모달 (textarea)
+  - 검색 기능 (의미 기반 검색)
+  - 생각 목록 표시 (type badge, date, tags, related_tickers)
+  - 생각 삭제 기능
+  - Empty state 처리
+- [x] `dashboard/src/app/reports/page.tsx` 생성
+  - 리포트 목록 표시
+  - 일일/주간 리포트 생성 버튼
+  - 리포트 상세 보기 모달 (markdown 렌더링)
+  - Empty state 처리
+- [x] `dashboard/src/hooks/useWebSocket.ts` 생성
+  - WebSocket 연결 관리
+  - 자동 재연결 (5초 후)
+  - 채널 구독 (portfolio, thoughts, reports)
+  - 메시지 수신 처리
+  - 연결 상태 (connecting/connected/disconnected/error)
+  - sendMessage, subscribe 함수 제공
 - [x] `dashboard/README.md` 생성
 - [x] 프로젝트 README 업데이트
+
+## Week 2 완료 ✅
+- [x] YouTube 콘텐츠 수집기 (`collector/youtube_collector.py`)
+  - RSS feed 파싱
+  - 동영상 정보 추출 (제목, 설명, URL, author, tags)
+  - LLM 기반 요약 (300자 이내)
+  - LLM 기반 엔티티 추출 (tickers, companies, topics, sentiment)
+  - 벡터 저장소에 임베딩 저장
+  - 중복 체크
+- [x] 네이버 블로그 수집기 (`collector/naver_blog_collector.py`)
+  - RSS feed 파싱
+  - 블로그 게시글 정보 추출 (제목, 설명, URL, author, tags)
+  - HTML 태그 제거
+  - LLM 기반 요약 (300자 이내)
+  - LLM 기반 엔티티 추출 (tickers, companies, topics, sentiment)
+  - 벡터 저장소에 임베딩 저장
+  - 중복 체크
+- [x] 일일/주간 리포트 생성기 (`analyzer/report_builder.py`)
+  - 포트폴리오 데이터 수집 (holdings, snapshot, recent_transactions)
+  - 최근 생각 및 콘텐츠 요약
+  - LLM 기반 리포트 생성 (portfolio_section, content_section, thought_section, ai_opinion, action_items)
+  - 과거 유사 생각 검색 (주간 리포트)
+  - prompts.yaml에서 프롬프트 로드
+- [x] 스케줄러 (`scheduler/daily_jobs.py`)
+  - YouTube 수집 (6시간마다 - hour="*/6")
+  - 네이버 블로그 수집 (12시간마다 - hour="*/12")
+  - 주식 가격 추적 (장중 1시간마다 - hour="9-15", minute="0")
+  - 일일 리포트 생성 (매일 8시 - hour=20, minute=0)
+  - 주간 리포트 생성 (일요일 9시 - day_of_week="sun", hour=21, minute=0)
+  - 일일 스냅샷 생성 (매일 6시 - hour=18, minute=0)
+  - APScheduler BackgroundScheduler 사용
+- [x] LLM 라우터 (`analyzer/llm_router.py`)
+  - Ollama 지원 (llama3.2, nomic-embed-text)
+  - Anthropic Claude 지원 (claude-3-5-sonnet-20241022)
+  - 텍스트 생성 (generate, system_prompt, temperature, max_tokens)
+  - 임베딩 생성 (embed, Ollama만 지원)
+  - 구조화된 출력 (generate_structured, JSON schema)
+  - 생각 분류 (classify_thought, type/tags/tickers)
+  - 콘텐츠 요약 (summarize_content, max_length)
+  - 엔티티 추출 (extract_entities, tickers/companies/topics/sentiment)
+  - 편의 함수 (get_llm_router, generate_text, get_embedding, classify_thought)
+
+## Week 3 완료 ✅
+- [x] MCP 서버 구현 (`mcp_servers/`)
+  - Portfolio MCP Server (`portfolio_mcp/server.py`)
+  - Memory MCP Server (`memory_mcp/server.py`)
+  - Content MCP Server (`content_mcp/server.py`)
+  - MCP 서버 README (`mcp_servers/README.md`)
+  - pyproject.toml에 mcp 의존성 추가
+- [x] KIS API 연동 (한국투자증권 OpenAPI)
+  - OAuth 토큰 발급 구현 (_get_access_token)
+  - 주식현재가 시세 API 연동 (FHKST01010100)
+  - 폴백 메커니즘 (API 키 없으면 mock 데이터 반환)
+  - 토큰 만료 체크 및 갱신
+- [x] 대시보드 실시간 업데이트 (WebSocket)
+  - WebSocket endpoint 구현 (`api/routes/websocket.py`)
+  - ConnectionManager for broadcasting
+  - Channel-based subscriptions (portfolio, thoughts, reports, alerts)
+  - Frontend WebSocket hook (`dashboard/src/hooks/useWebSocket.ts`)
+  - Dashboard real-time updates (portfolio_update, price_update)
+  - 자동 재연결 로직
+- [x] 알림 시스템 (이메일, 텔레그램)
+  - Notification module (`analyzer/notifications.py`)
+  - EmailNotifier (aiosmtplib, HTML 템플릿)
+  - TelegramNotifier (telegram bot, formatted messages)
+  - NotificationPriority (LOW, NORMAL, HIGH, URGENT)
+  - NotificationType (PORTFOLIO_UPDATE, PRICE_ALERT, NEW_THOUGHT, NEW_REPORT, MARKET_SUMMARY, ERROR)
+  - Priority-based filtering (notification_min_priority)
+  - Quiet hours support (quiet_hours_start=22, quiet_hours_end=8)
+  - Price alerts, portfolio summaries, error notifications
 
 ## 마이그레이션 완료
 
@@ -107,129 +223,16 @@
 - [x] `docker-compose.yml` 생성 (PostgreSQL + pgvector 컨테이너)
 - [x] `storage/db.py` PostgreSQL 연동 완료
 - [x] `storage/vector_store.py` pgvector로 마이그레이션
+  - ThoughtVector, ContentVector, AIChatVector 모델
+  - pgvector 확장 자동 활성화 (_ensure_pgvector_extension)
+  - 코사인 유사도 검색 (1 - (embedding <=> :embedding))
+  - 메타데이터 필터링 지원
 - [x] `.env.example` PostgreSQL 설정 추가
 - [x] `pyproject.toml` 의존성 업데이트 (psycopg2-binary, pgvector)
 
 **참고**: `MIGRATION_TO_POSTGRESQL.md` 파일에서 상세 마이그레이션 가이드 확인
 
-## 다음 단계
-
-### 의존성 설치 및 테스트
-- [x] PostgreSQL + pgvector Docker 컨테이너 설정
-  ```bash
-  cd market-insight
-  docker-compose up -d
-  # 확인: docker ps
-  ```
-- [ ] `backend/` 의존성 설치
-  ```bash
-  cd backend
-  uv sync  # 또는 pip install -r requirements.txt
-  ```
-- [ ] `.env` 파일 설정
-  ```bash
-  cp .env.example .env
-  # .env 파일에서 DB_PASSWORD 등 필요한 설정 수정
-  ```
-- [ ] 데이터베이스 초기화 테스트
-  ```bash
-  cd backend
-  uv run python -c "from storage.db import init_database; init_database()"
-  ```
-- [ ] FastAPI 서버 실행 테스트
-  ```bash
-  cd backend
-  uv run python api/main.py
-  # http://localhost:3000/docs 확인
-  ```
-- [ ] CLI 명령어 테스트
-  ```bash
-  inv init
-  inv portfolio
-  inv think "테스트 메모"
-  ```
-
-### Week 2 완료 ✅
-- [x] YouTube 콘텐츠 수집기 (`collector/youtube_collector.py`)
-  - RSS feed 파싱
-  - 동영상 정보 추출 (제목, 설명, URL)
-  - LLM 기반 요약 및 엔티티 추출
-  - 벡터 저장소에 임베딩 저장
-- [x] 네이버 블로그 수집기 (`collector/naver_blog_collector.py`)
-  - RSS feed 파싱
-  - 블로그 게시글 정보 추출
-  - LLM 기반 요약 및 엔티티 추출
-  - 벡터 저장소에 임베딩 저장
-- [x] 일일/주간 리포트 생성기 (`analyzer/report_builder.py`)
-  - 포트폴리오 데이터 수집
-  - 최근 생각 및 콘텐츠 요약
-  - LLM 기반 리포트 생성
-  - 과거 유사 생각 검색 (주간 리포트)
-- [x] 스케줄러 (`scheduler/daily_jobs.py`)
-  - YouTube 수집 (6시간마다)
-  - 네이버 블로그 수집 (12시간마다)
-  - 주식 가격 추적 (장중 1시간마다)
-  - 일일 리포트 생성 (매일 8시)
-  - 주간 리포트 생성 (일요일 9시)
-  - 일일 스냅샷 생성 (매일 6시)
-- [x] LLM 라우터 (`analyzer/llm_router.py`)
-  - Ollama 지원 (llama3.2, nomic-embed-text)
-  - Anthropic Claude 지원 (선택적)
-  - 텍스트 생성
-  - 임베딩 생성
-  - 구조화된 출력 (JSON)
-  - 생각 분류
-  - 콘텐츠 요약
-  - 엔티티 추출
-- [x] Ollama 임베딩 연동 (nomic-embed-text)
-  - vector_store.py 업데이트
-  - 해시 기반 임베딩에서 실제 임베딩으로 변경
-  - 폴백 메커니즘 (Ollama 연결 실패 시 해시 기반 사용)
-
-### Week 2 완료 ✅ (API Routes)
-- [x] `api/routes/content.py` 생성
-  - 콘텐츠 조회 엔드포인트 (목록, 상세, 종목별)
-  - 콘텐츠 수집 엔드포인트 (YouTube, Naver, 전체)
-  - 콘텐츠 검색 엔드포인트
-- [x] `api/routes/reports.py` 생성
-  - 리포트 조회 엔드포인트 (목록, 최신, 상세, 날짜별)
-  - 리포트 생성 엔드포인트 (일일, 주간)
-- [x] `api/main.py` 업데이트
-  - content, reports 라우터 포함
-
-### Week 3 예정
-- [x] MCP 서버 구현 (`mcp_servers/`)
-  - [x] Portfolio MCP Server (`portfolio_mcp/server.py`)
-  - [x] Memory MCP Server (`memory_mcp/server.py`)
-  - [x] Content MCP Server (`content_mcp/server.py`)
-  - [x] MCP 서버 README (`mcp_servers/README.md`)
-  - [x] pyproject.toml에 mcp 의존성 추가
-- [x] 대시보드 기능 확장 (생각 기록 UI, 리포트 조회)
-  - [x] 생각 기록 페이지 (`dashboard/src/app/thoughts/page.tsx`)
-  - [x] 리포트 조회 페이지 (`dashboard/src/app/reports/page.tsx`)
-  - [x] 네비게이션 추가
-- [x] Telegram Bot 구현 (`interface/telegram_bot.py`)
-  - [x] 기본 명령어 (/start, /portfolio, /think, /recall, /report, /ask, /help)
-  - [x] 자동 생각 기록 (일반 메시지)
-  - [x] LLM 기반 분류
-  - [x] 벡터 검색 통합
-- [x] KIS API 연동 (한국투자증권 OpenAPI)
-  - [x] OAuth 토큰 발급 구현
-  - [x] 주식현재가 시세 API 연동
-  - [x] 폴백 메커니즘 (API 키 없으면 mock 데이터)
-- [x] 대시보드 실시간 업데이트 (WebSocket)
-  - [x] WebSocket endpoint 구현 (`api/routes/websocket.py`)
-  - [x] Connection manager for broadcasting
-  - [x] Channel-based subscriptions (portfolio, thoughts, reports, alerts)
-  - [x] Frontend WebSocket hook (`dashboard/src/hooks/useWebSocket.ts`)
-  - [x] Dashboard real-time updates
-- [x] 알림 시스템 (이메일, 텔레그램)
-  - [x] Notification module (`analyzer/notifications.py`)
-  - [x] Email notifier with HTML templates
-  - [x] Telegram notifier with formatted messages
-  - [x] Priority-based filtering
-  - [x] Quiet hours support
-  - [x] Price alerts, portfolio summaries, error notifications
+---
 
 ## 파일 구조
 
@@ -238,6 +241,12 @@ market-insight/
 ├── docker-compose.yml ✅
 ├── MIGRATION_TO_POSTGRESQL.md ✅
 ├── README.md ✅
+├── IMPLEMENTATION_PROGRESS.md ✅
+├── WEBSOCKET_AND_NOTIFICATIONS.md ✅
+├── SETUP_GUIDE.md ✅
+├── DEPLOYMENT_MANUAL.md ✅
+├── SEQUENCE_DIAGRAMS.md ✅
+├── DATABASE_SCHEMA.md ✅
 ├── backend/
 │   ├── api/
 │   │   ├── main.py ✅
@@ -245,7 +254,8 @@ market-insight/
 │   │       ├── portfolio.py ✅
 │   │       ├── thoughts.py ✅
 │   │       ├── content.py ✅
-│   │       └── reports.py ✅
+│   │       ├── reports.py ✅
+│   │       └── websocket.py ✅
 │   ├── collector/
 │   │   ├── stock_tracker.py ✅
 │   │   ├── thought_logger.py ✅
@@ -256,7 +266,8 @@ market-insight/
 │   │   ├── db.py ✅
 │   │   └── vector_store.py ✅
 │   ├── interface/
-│   │   └── cli.py ✅
+│   │   ├── cli.py ✅
+│   │   └── telegram_bot.py ✅
 │   ├── analyzer/
 │   │   ├── llm_router.py ✅
 │   │   ├── report_builder.py ✅
@@ -269,19 +280,34 @@ market-insight/
 │   │   └── prompts.yaml ✅
 │   ├── data/
 │   │   ├── raw/          # 원본 데이터 저장
-│   │   └── reports/      # 생성된 리포트
+│   │   ├── reports/      # 생성된 리포트
+│   │   │   ├── daily/
+│   │   │   └── weekly/
+│   │   ├── chroma/        # ChromaDB (사용 안 함)
+│   │   └── sqlite/        # SQLite (사용 안 함)
 │   ├── logs/
-│   ├── mcp_servers/      # (예정) MCP 서버들
+│   ├── mcp_servers/
+│   │   ├── README.md ✅
+│   │   ├── portfolio_mcp/
+│   │   │   └── server.py ✅
+│   │   ├── memory_mcp/
+│   │   │   └── server.py ✅
+│   │   └── content_mcp/
+│   │       └── server.py ✅
 │   ├── pyproject.toml ✅
 │   └── .env.example ✅
 ├── dashboard/
 │   ├── src/
 │   │   └── app/
-│   │   ├── layout.tsx ✅
-│   │   ├── page.tsx ✅
-│   │   ├── globals.css ✅
-│   │   └── hooks/
-│   │       └── useWebSocket.ts ✅
+│   │       ├── layout.tsx ✅
+│   │       ├── page.tsx ✅
+│   │       ├── globals.css ✅
+│   │       ├── thoughts/
+│   │       │   └── page.tsx ✅
+│   │       ├── reports/
+│   │       │   └── page.tsx ✅
+│   │       └── hooks/
+│   │           └── useWebSocket.ts ✅
 │   ├── package.json ✅
 │   ├── tsconfig.json ✅
 │   ├── tailwind.config.ts ✅
@@ -290,35 +316,184 @@ market-insight/
 │   └── README.md ✅
 ```
 
-**참고**: `data/chroma/` 및 `data/sqlite/` 디렉토리는 마이그레이션 이후 사용되지 않습니다.
+**참고**: `data/chroma/` 및 `data/sqlite/` 디렉토리는 PostgreSQL + pgvector 마이그레이션 이후 사용되지 않습니다.
 
-## 알려진 문제
+---
+
+## 다음 단계 (설치 및 설정)
+
+### 1. PostgreSQL + pgvector Docker 컨테이너 시작
+```bash
+cd market-insight
+docker-compose up -d
+# 확인: docker ps
+```
+
+### 2. Ollama 설치 및 설정 (선택 사항)
+```bash
+# Ollama 설치
+brew install ollama
+
+# Ollama 서버 시작
+brew services start ollama
+
+# 필수 모델 다운로드
+ollama pull nomic-embed-text
+ollama pull llama3.2
+```
+
+### 3. 백엔드 설정
+```bash
+cd market-insight/backend
+
+# 의존성 설치
+uv sync
+
+# .env 파일 설정
+cp .env.example .env
+# .env 파일에서 필요한 설정 수정 (DB_PASSWORD, KIS_APP_KEY, KIS_APP_SECRET, KIS_ACCOUNT_NO 등)
+
+# 데이터베이스 초기화
+uv run python -c "from storage.db import init_database; init_database()"
+
+# FastAPI 서버 실행 테스트
+uv run python api/main.py
+# http://localhost:3000/docs 확인
+```
+
+### 4. 대시보드 설정
+```bash
+cd market-insight/dashboard
+
+# 의존성 설치
+npm install
+
+# 개발 서버 실행
+npm run dev
+# http://localhost:3001 접속
+```
+
+### 5. CLI 명령어 테스트
+```bash
+cd market-insight/backend
+
+inv init
+inv portfolio
+inv think "테스트 메모"
+inv recall "테스트"
+```
+
+### 6. Telegram Bot 설정 (선택 사항)
+```bash
+# .env 파일에 설정 추가
+TELEGRAM_BOT_TOKEN=your-bot-token
+TELEGRAM_CHAT_ID=your-chat-id
+
+# 봇 실행
+uv run python interface/telegram_bot.py
+```
+
+### 7. 알림 시스템 설정 (선택 사항)
+```bash
+# .env 파일에 설정 추가
+# 이메일
+NOTIFICATION_EMAIL_ENABLED=true
+NOTIFICATION_EMAIL_HOST=smtp.gmail.com
+NOTIFICATION_EMAIL_PORT=587
+NOTIFICATION_EMAIL_USERNAME=your@email.com
+NOTIFICATION_EMAIL_PASSWORD=your-app-password
+NOTIFICATION_EMAIL_FROM=your@email.com
+NOTIFICATION_EMAIL_TO=your@email.com
+
+# 텔레그램
+NOTIFICATION_TELEGRAM_ENABLED=true
+NOTIFICATION_TELEGRAM_BOT_TOKEN=your-bot-token
+NOTIFICATION_TELEGRAM_CHAT_ID=your-chat-id
+
+# 우선순위 및 조용 시간
+NOTIFICATION_NOTIFICATION_MIN_PRIORITY=normal
+NOTIFICATION_QUIET_HOURS_START=22
+NOTIFICATION_QUIET_HOURS_END=8
+```
+
+---
+
+## 알려진 문제 및 해결 방법
 
 ### TypeScript 에러 (dashboard/)
-- `react`, `next`, `lucide-react` 모듈을 찾을 수 없음
-- 원인: `npm install` 아직 실행 안 함
-- 해결: `cd dashboard && npm install`
+- **증상**: `react`, `next`, `lucide-react` 모듈을 찾을 수 없음
+- **원인**: `npm install` 아직 실행 안 함
+- **해결**: `cd dashboard && npm install`
 
 ### Ollama 임베딩 (backend/)
-- 현재: Ollama nomic-embed-text 연동 완료 ✅
-- 해결:
+- **현재 상태**: Ollama nomic-embed-text 연동 완료 ✅
+- **설정 방법**:
   1. Ollama 설치: `brew install ollama`
   2. 모델 다운로드: `ollama pull nomic-embed-text`
-  3. `storage/vector_store.py`의 `_embed()` 메서드 수정 완료
-  4. 폴백 메커니즘: Ollama 연결 실패 시 해시 기반 임베딩 사용
+  3. Ollama 서버 시작: `brew services start ollama`
+- **폴백 메커니즘**: Ollama 연결 실패 시 해시 기반 임베딩 사용
 
 ### PostgreSQL + pgvector (backend/)
-- 현재: PostgreSQL + pgvector로 마이그레이션 완료 ✅
-- 필요: Docker 컨테이너 시작 (`docker-compose up -d`)
-- 참고: `docker-compose down -v`로 컨테이너 및 데이터 정리 가능
-- 상세: `MIGRATION_TO_POSTGRESQL.md` 참조
+- **현재 상태**: PostgreSQL + pgvector로 마이그레이션 완료 ✅
+- **필요 작업**: Docker 컨테이너 시작 (`docker-compose up -d`)
+- **참고**: `docker-compose down -v`로 컨테이너 및 데이터 정리 가능
+- **상세**: `MIGRATION_TO_POSTGRESQL.md` 참조
 
 ### KIS API (backend/)
-- 현재: mock 데이터 반환
-- TODO: 한국투자증권 OpenAPI 연동
+- **현재 상태**: OAuth 토큰 발급 구현 완료 ✅
+- **폴백 메커니즘**: API 키 없으면 mock 데이터 사용
+- **설정 방법**: `.env` 파일에 `KIS_APP_KEY`, `KIS_APP_SECRET`, `KIS_ACCOUNT_NO` 설정
 
-### Telegram Bot (예정)
-- 현재: 구현되지 않음
-- 계획: Week 3에 구현 예정
-- 설치: `uv pip install -e ".[telegram]"`
-- 설정: `.env` 파일에 `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` 설정
+### Telegram Bot (backend/)
+- **현재 상태**: 구현 완료 ✅
+- **설치**: `uv pip install -e ".[telegram]"`
+- **설정**: `.env` 파일에 `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` 설정
+
+### 알림 시스템 (backend/)
+- **현재 상태**: 구현 완료 ✅
+- **설정**: `.env` 파일에 이메일/텔레그램 알림 설정 추가
+
+---
+
+## 구현 완료 요약
+
+### 백엔드 (FastAPI) ✅
+- ✅ 모든 API 라우트 구현 완료 (portfolio, thoughts, content, reports, websocket)
+- ✅ 데이터베이스 연동 (PostgreSQL + pgvector)
+- ✅ 콘텐츠 수집기 (YouTube, 네이버 블로그)
+- ✅ 리포트 생성기 (일일, 주간)
+- ✅ 스케줄러 (자동 수집 및 리포트 생성)
+- ✅ LLM 라우터 (Ollama, Claude)
+- ✅ 알림 시스템 (이메일, 텔레그램)
+- ✅ WebSocket 실시간 업데이트
+- ✅ KIS API 연동 (한국투자증권 OpenAPI)
+- ✅ MCP 서버 (Portfolio, Memory, Content)
+- ✅ CLI 인터페이스
+- ✅ Telegram Bot
+
+### 프론트엔드 (Next.js) ✅
+- ✅ 메인 대시보드 (포트폴리오 요약, 종목 테이블)
+- ✅ 생각 기록 페이지 (생각 기록, 검색, 삭제)
+- ✅ 리포트 조회 페이지 (리포트 목록, 생성, 상세 보기)
+- ✅ WebSocket 실시간 업데이트
+- ✅ 반응형 디자인 (Tailwind CSS)
+- ✅ 네비게이션
+
+### 인프라 ✅
+- ✅ PostgreSQL + pgvector (Docker)
+- ✅ Ollama 연동 (선택 사항)
+- ✅ Docker Compose 설정
+
+---
+
+## 결론
+
+**모든 기능 구현이 완료되었습니다.** 이제 남은 설치 및 설정 단계뿐입니다:
+
+1. PostgreSQL + pgvector Docker 컨테이너 시작
+2. Ollama 설치 및 모델 다운로드 (선택 사항)
+3. 백엔드 의존성 설치 및 `.env` 설정
+4. 대시보드 `npm install`
+5. 서버 실행 및 테스트
+
+상세 설정 방법은 `SETUP_GUIDE.md`를 참조하세요.

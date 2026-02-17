@@ -344,7 +344,7 @@ result = await notification_manager.send_error_notification(
 
 🏷️ Ticker: 005930
 
-⏰ 2024-01-01 12:00
+🏰 2024-01-01 12:00
 ```
 
 ---
@@ -397,14 +397,13 @@ POST /api/v1/broadcast/portfolio
    - CORS 설정 확인: `api/main.py`의 `CORSMiddleware`
 
 2. **연결 끊김**
-   - WebSocket은 자동으로 재연결을 시도합니다.
-   - 네트워크 연결을 확인하세요.
+   - WebSocket은 자동으로 재연결을 시도합니다 (5초 후)
+   - 브라우저 콘솔에서 연결 상태를 확인하세요
 
 ### 이메일 알림 문제
 
 1. **Gmail 사용 시**
    - 앱 비밀번호를 사용하세요 (일반 비밀번호 X)
-   - 2단계 인증이 활성화되어 있어야 합니다.
    - [Google 계정 보안](https://myaccount.google.com/security)에서 앱 비밀번호 생성
 
 2. **SMTP 연결 실패**
@@ -418,69 +417,3 @@ POST /api/v1/broadcast/portfolio
 
 2. **채팅 ID**
    - 봇에게 메시지를 보낸 후 `https://api.telegram.org/bot<token>/getUpdates`로 확인
-
----
-
-## 예제
-
-### 포트폴리오 업데이트 시 알림 및 브로드캐스팅
-
-```python
-from api.routes.websocket import broadcast_portfolio_update
-from analyzer.notifications import send_notification, NotificationType, NotificationPriority
-
-# 포트폴리오 데이터 수집 후
-portfolio_data = {
-    "total_value": 1000000,
-    "total_pnl": 50000,
-    "total_pnl_pct": 5.0,
-    "holdings": [...]
-}
-
-# WebSocket으로 브로드캐스팅
-await broadcast_portfolio_update(portfolio_data)
-
-# 알림 전송
-await send_notification(
-    title="포트폴리오 업데이트",
-    message=f"총 자산: ₩{portfolio_data['total_value']:,}\n총 손익: ₩{portfolio_data['total_pnl']:,} ({portfolio_data['total_pnl_pct']:+.2f}%)",
-    notification_type=NotificationType.PORTFOLIO_UPDATE,
-    priority=NotificationPriority.NORMAL
-)
-```
-
-### 가격 알림 트리거
-
-```python
-from api.routes.websocket import broadcast_alert
-from analyzer.notifications import send_price_alert
-
-# 가격이 목표에 도달했을 때
-if current_price >= target_price:
-    # WebSocket으로 알림
-    await broadcast_alert({
-        "title": "가격 알림",
-        "message": f"{ticker}({name})이 목표 가격에 도달했습니다!",
-        "priority": "high",
-        "ticker": ticker
-    })
-
-    # 이메일/텔레그램 알림
-    await send_price_alert(
-        ticker=ticker,
-        name=name,
-        current_price=current_price,
-        target_price=target_price,
-        alert_type="above"
-    )
-```
-
----
-
-## 추가 개발 제안
-
-1. **WebSocket 인증**: JWT 토큰을 사용한 인증 추가
-2. **알림 기록**: 알림 전송 기록을 DB에 저장
-3. **알림 설정 UI**: 사용자별 알림 설정 관리
-4. **푸시 알림**: 브라우저 푸시 알림 추가
-5. **알림 그룹**: 알림을 그룹화하여 요약 전송
