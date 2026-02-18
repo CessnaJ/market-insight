@@ -31,8 +31,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_BASE = "http://localhost:3000/api/v1";
-  const WS_URL = "ws://localhost:3000/api/v1/ws";
+  const API_BASE = "http://localhost:8000/api/v1";
+  const WS_URL = "ws://localhost:8000/api/v1/ws";
 
   // WebSocket connection
   const { isConnected, lastMessage, connectionStatus } = useWebSocket(WS_URL);

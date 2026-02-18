@@ -9,12 +9,13 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     """Application Settings"""
     api_host: str = "0.0.0.0"
-    api_port: int = 3000
+    api_port: int = 8000
     log_level: str = "INFO"
 
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        extra = "allow"  # .env 파일의 추가 변수 허용
 
 
 settings = Settings()

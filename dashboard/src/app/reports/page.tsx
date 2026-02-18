@@ -26,7 +26,7 @@ export default function ReportsPage() {
 
   const fetchReports = async () => {
     try {
-      const response = await fetch("http://localhost:3000/api/reports/");
+      const response = await fetch("http://localhost:8000/api/reports/");
       if (response.ok) {
         const data = await response.json();
         setReports(data);

@@ -28,7 +28,7 @@ export default function ThoughtsPage() {
 
   const fetchThoughts = async () => {
     try {
-      const response = await fetch("http://localhost:3000/api/thoughts/");
+      const response = await fetch("http://localhost:8000/api/thoughts/");
       if (response.ok) {
         const data = await response.json();
         setThoughts(data);
