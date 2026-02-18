@@ -14,12 +14,13 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     """Application Settings"""
     # PostgreSQL connection string (with pgvector support)
-    # Format: postgresql+psycopg://user:password@host:port/database
-    database_url: str = "postgresql+psycopg://investor:changeme@localhost:5432/market_insight"
+    # Format: postgresql+psycopg2://user:password@host:port/database
+    database_url: str = "postgresql+psycopg2://investor:changeme@localhost:5432/market_insight"
 
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        extra = "ignore"  # Allow extra fields in .env file
 
 
 settings = Settings()
