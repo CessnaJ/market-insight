@@ -1,6 +1,6 @@
 """Database Models using SQLModel"""
 
-from sqlmodel import SQLModel, Field, create_engine, Session
+from sqlmodel import SQLModel, Field
 from datetime import datetime, date
 from typing import Optional
 import uuid
@@ -19,7 +19,7 @@ class StockPrice(SQLModel, table=True):
     low: Optional[float] = None
     market: str = "KR"  # KR or US
     recorded_at: datetime = Field(default_factory=datetime.now)
-    date: date = Field(default_factory=date.today, index=True)
+    price_date: date = Field(default_factory=lambda: date.today(), index=True)
 
 
 class PortfolioHolding(SQLModel, table=True):
@@ -45,7 +45,7 @@ class Transaction(SQLModel, table=True):
     price: float
     total_amount: float
     reason: Optional[str] = None
-    date: date
+    transaction_date: date
     created_at: datetime = Field(default_factory=datetime.now)
 
 
@@ -53,7 +53,7 @@ class Transaction(SQLModel, table=True):
 class DailySnapshot(SQLModel, table=True):
     """일별 포트폴리오 스냅샷"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    date: date = Field(index=True, unique=True)
+    snapshot_date: date = Field(index=True, unique=True)
     total_value: float  # 총 평가액
     total_invested: float  # 총 투자원금
     total_pnl: float  # 총 손익
@@ -100,7 +100,7 @@ class Thought(SQLModel, table=True):
 class DailyReport(SQLModel, table=True):
     """일일 리포트"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    date: date = Field(index=True)
+    report_date: date = Field(index=True)
     report_markdown: str
     portfolio_section: Optional[str] = None
     content_section: Optional[str] = None

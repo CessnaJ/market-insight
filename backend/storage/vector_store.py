@@ -4,7 +4,7 @@ from typing import Optional, List, Dict, Any, Tuple
 from sqlmodel import Session, select, col
 from storage.db import engine
 from sqlmodel import SQLModel, Field, Column
-from sqlalchemy import text
+from sqlalchemy import text, JSON, LargeBinary
 import hashlib
 from analyzer.llm_router import get_embedding
 
@@ -16,8 +16,8 @@ class ThoughtVector(SQLModel, table=True):
 
     id: str = Field(primary_key=True)
     content: str
-    embedding: List[float] = Field(sa_column=Column("embedding", None))  # pgvector type
-    metadata: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column("metadata", None))
+    embedding: Optional[str] = Field(default=None)  # pgvector type stored as string
+    meta_data: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column("metadata", JSON))
 
 
 class ContentVector(SQLModel, table=True):
@@ -26,8 +26,8 @@ class ContentVector(SQLModel, table=True):
 
     id: str = Field(primary_key=True)
     content: str
-    embedding: List[float] = Field(sa_column=Column("embedding", None))  # pgvector type
-    metadata: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column("metadata", None))
+    embedding: Optional[str] = Field(default=None)  # pgvector type stored as string
+    meta_data: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column("metadata", JSON))
 
 
 class AIChatVector(SQLModel, table=True):
@@ -36,8 +36,8 @@ class AIChatVector(SQLModel, table=True):
 
     id: str = Field(primary_key=True)
     content: str
-    embedding: List[float] = Field(sa_column=Column("embedding", None))  # pgvector type
-    metadata: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column("metadata", None))
+    embedding: Optional[str] = Field(default=None)  # pgvector type stored as string
+    meta_data: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column("metadata", JSON))
 
 
 class VectorStore:
