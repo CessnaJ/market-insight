@@ -217,6 +217,8 @@ node_modules
 /coverage
 
 # Next.js
+# 모든 하위 디렉토리의 .next 무시
+**/.next/
 /.next/
 /out/
 
