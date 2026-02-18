@@ -2,14 +2,46 @@
 
 # YouTube Channels (RSS Feed)
 youtube:
-  - channel_id: "UC..."
-    name: "Example Channel 1"
+  - channel_id: "UCpqD9_OJNtF6suPpi6mOQCQ"
+    name: "월가아재의 과학적 투자"
     category: "investment"
-    enabled: false
-  - channel_id: "UC..."
-    name: "Example Channel 2"
-    category: "tech"
-    enabled: false
+    enabled: true
+  - channel_id: "UCKTMvIu9a4VGSrpWy-8bUrQ"
+    name: "내일은 투자왕 - 김단테"
+    category: "investment"
+    enabled: true
+  - channel_id: "UCJoutqtfNZTZbEe8xTUk0kw"
+    name: "테이바생각"
+    category: "investment"
+    enabled: true
+  - channel_id: "UCI6C5V4J8FWRcLcOdh1yElw"
+    name: "강민우 돈깡TV"
+    category: "investment"
+    enabled: true
+  - channel_id: "UC7JriZyW6E5phUSKfjoaEPA"
+    name: "미과장"
+    category: "investment"
+    enabled: true
+  - channel_id: "UCaJdckl6MBdDPDf75Ec_bJA"
+    name: "디피"
+    category: "investment"
+    enabled: true
+  - channel_id: "UCamX91KxAzdicrLY6JPXjrw"
+    name: "삼쩜삼캠퍼스"
+    category: "investment"
+    enabled: true
+  - channel_id: "UCJo6G1u0e_-wS-JQn3T-zEw"
+    name: "슈카월드"
+    category: "economy"
+    enabled: true
+  - channel_id: "UCge4_EUhf1O-EupOgRAMgPA"
+    name: "글로벌모니터TV"
+    category: "economy"
+    enabled: true
+  - channel_id: "UCIUni4ScRp4mqPXsxy62L5w"
+    name: "언더스탠딩 : 세상의 모든 지식"
+    category: "knowledge"
+    enabled: true
 
 # Naver Blogs (RSS Feed)
 naver_blogs:
