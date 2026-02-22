@@ -71,3 +71,157 @@ user:
     3. 콘텐츠에서 발견된 중요 트렌드
     4. 포트폴리오 리밸런싱 제안
     5. 다음 주 주요 관심 포인트
+
+# Temporal Signal Decomposition Prompts
+temporal:
+  system: |
+    당신은 주가 변동 요인 분석 전문가입니다.
+    주가 변동을 단기(1주일 이내), 중기(1주일~3개월), 장기(3개월 이상) 요인으로 분해하여 분석하세요.
+    각 시간대별로 영향력 있는 요인을 식별하고, 그 중요도를 평가하세요.
+    톤: 분석적이고 객관적.
+    형식: JSON.
+
+  short_term_analysis: |
+    ## 단기 주가 변동 분석 (1주일 이내)
+    
+    ### 종목 정보
+    종목코드: {ticker}
+    종목명: {company_name}
+    이벤트일자: {event_date}
+    주가 변동률: {price_change_pct}%
+    
+    ### 매크로 환경
+    {macro_context}
+    
+    ### 수급 데이터
+    {supply_demand_data}
+    
+    ### 최근 공시/뉴스 (최근 7일)
+    {recent_news}
+    
+    ### 시장 심리 지표
+    {sentiment_indicators}
+    
+    ### 요청사항
+    다음 JSON 형식으로 단기 요인을 분석하세요:
+    {{
+      "primary_factor": "주요 요인 (예: 외국인 순매수, 호재성 뉴스, 매크로 충격 등)",
+      "secondary_factors": ["2차 요인들"],
+      "supply_demand": {{
+        "foreigner_net": "외국인 순매수 추이",
+        "institution_net": "기관 순매수 추이",
+        "retail_net": "개인 순매수 추이",
+        "short_selling": "공매도 동향"
+      }},
+      "market_sentiment": "시장 심리 (bullish/bearish/neutral)",
+      "impact_score": 0.0~1.0 (단기 요인의 영향력 점수),
+      "confidence": 0.0~1.0 (분석 확신도)
+    }}
+
+  medium_term_analysis: |
+    ## 중기 주가 변동 분석 (1주일~3개월)
+    
+    ### 종목 정보
+    종목코드: {ticker}
+    종목명: {company_name}
+    분석 기간: {analysis_period}
+    
+    ### 실적 리비전 동향
+    {earnings_revision}
+    
+    ### 섹터 로테이션
+    {sector_rotation}
+    
+    ### 최근 실적 발표 (최근 3개월)
+    {recent_earnings}
+    
+    ### 애널리스트 의견 변화
+    {analyst_opinions}
+    
+    ### 요청사항
+    다음 JSON 형식으로 중기 요인을 분석하세요:
+    {{
+      "primary_factor": "주요 요인 (예: 실적 리비전, 섹터 모멘텀, 밸류에이션 재평가 등)",
+      "secondary_factors": ["2차 요인들"],
+      "earnings_revision": {{
+        "trend": "up/down/stable",
+        "key_drivers": ["실적 리비전 주요 원인들"]
+      }},
+      "sector_momentum": "섹터 모멘텀 (strong/moderate/weak)",
+      "valuation": "밸류에이션 상태 (undervalued/fair/overvalued)",
+      "impact_score": 0.0~1.0 (중기 요인의 영향력 점수),
+      "confidence": 0.0~1.0 (분석 확신도)
+    }}
+
+  long_term_analysis: |
+    ## 장기 주가 변동 분석 (3개월 이상)
+    
+    ### 종목 정보
+    종목코드: {ticker}
+    종목명: {company_name}
+    
+    ### 구조적 경쟁력
+    {structural_competitiveness}
+    
+    ### 시장 점유율 추이
+    {market_share}
+    
+    ### 산업 구조 변화
+    {industry_structure}
+    
+    ### 기술/사업 모델 혁신
+    {innovation}
+    
+    ### 요청사항
+    다음 JSON 형식으로 장기 요인을 분석하세요:
+    {{
+      "primary_factor": "주요 요인 (예: 시장 점유율 확대, 기술 우위, 산업 성장성 등)",
+      "secondary_factors": ["2차 요인들"],
+      "structural_advantage": {{
+        "type": "cost_leadership/differentiation/focus/none",
+        "sustainability": "high/medium/low",
+        "key_factors": ["경쟁 우위 핵심 요인들"]
+      }},
+      "market_position": {{
+        "share_trend": "increasing/stable/decreasing",
+        "competitive_landscape": "경쟁 환경 설명"
+      }},
+      "growth_potential": "성장 잠재력 (high/medium/low)",
+      "impact_score": 0.0~1.0 (장기 요인의 영향력 점수),
+      "confidence": 0.0~1.0 (분석 확신도)
+    }}
+
+  comprehensive_analysis: |
+    ## 종합 주가 변동 분석
+    
+    ### 종목 정보
+    종목코드: {ticker}
+    종목명: {company_name}
+    이벤트일자: {event_date}
+    주가 변동률: {price_change_pct}%
+    
+    ### 단기 분석 결과
+    {short_term_result}
+    
+    ### 중기 분석 결과
+    {medium_term_result}
+    
+    ### 장기 분석 결과
+    {long_term_result}
+    
+    ### 요청사항
+    위 세 가지 시간대별 분석 결과를 종합하여, 전체 주가 변동에 대한 균형된 시각을 제시하세요.
+    다음 JSON 형식으로 응답하세요:
+    {{
+      "dominant_timeframe": "short/medium/long",
+      "dominant_factor": "가장 영향력이 큰 요인",
+      "attribution_breakdown": {{
+        "short_term": 0.0~1.0,
+        "medium_term": 0.0~1.0,
+        "long_term": 0.0~1.0
+      }},
+      "key_insights": ["주요 인사이트들"],
+      "risk_factors": ["리스크 요인들"],
+      "investment_implication": "투자 시사점",
+      "overall_confidence": 0.0~1.0
+    }}

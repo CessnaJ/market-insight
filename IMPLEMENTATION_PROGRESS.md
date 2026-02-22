@@ -217,6 +217,46 @@ Market Insight 시스템의 모든 핵심 기능 구현이 완료되었습니다
   - Quiet hours support (quiet_hours_start=22, quiet_hours_end=8)
   - Price alerts, portfolio summaries, error notifications
 
+## Sprint 2 완료: Temporal Signal Decomposition ✅ (2026-02-22)
+
+- [x] TemporalSignalDecomposer class (`analyzer/temporal_decomposer.py`)
+  - TemporalBreakdown dataclass (short/medium/long-term)
+  - TemporalAnalysisResult dataclass
+  - Claude 3.7 integration for analysis
+  - Three-stage analysis (short, medium, long term)
+  - Comprehensive summary generation
+  - Database save functionality
+- [x] Context Gatherer (`analyzer/context_gatherer.py`)
+  - Macro data collection (금리, 환율)
+  - Recent reports retrieval (EARNINGS_CALL, DART_FILING)
+  - Recent filings retrieval
+  - Market sentiment indicators
+  - Earnings revision tracking
+  - Sector rotation data
+  - Structural competitiveness analysis
+- [x] Prompt templates (`config/prompts.yaml`)
+  - Short-term analysis prompt (수급, 심리, 매크로)
+  - Medium-term analysis prompt (실적 리비전, 섹터 로테이션)
+  - Long-term analysis prompt (구조적 경쟁력, 시장 점유율)
+  - Comprehensive analysis prompt
+- [x] Database schema (`storage/models.py`)
+  - PriceAttribution model added
+  - Database operations (`storage/db.py`)
+- [x] API routes (`api/routes/temporal_analysis.py`)
+  - GET/POST endpoints for price attributions
+  - Analysis endpoints
+  - Batch analysis support
+  - Info endpoints (timeframes, confidence levels)
+- [x] Test suite (`test_sprint2.py`)
+  - Context gatherer tests
+  - Temporal decomposer tests
+  - Database operations tests
+  - Integration tests
+  - Historical event tests
+- [x] Migration script (`migrations/add_price_attributions_table.py`)
+
+**참고**: `SPRINT2_IMPLEMENTATION_SUMMARY.md` 파일에서 상세 구현 내용 확인
+
 ## 마이그레이션 완료
 
 ### SQLite + ChromaDB → PostgreSQL + pgvector ✅
@@ -255,7 +295,9 @@ market-insight/
 │   │       ├── thoughts.py ✅
 │   │       ├── content.py ✅
 │   │       ├── reports.py ✅
-│   │       └── websocket.py ✅
+│   │       ├── websocket.py ✅
+│   │       ├── primary_sources.py ✅
+│   │       └── temporal_analysis.py ✅
 │   ├── collector/
 │   │   ├── stock_tracker.py ✅
 │   │   ├── thought_logger.py ✅
@@ -271,7 +313,9 @@ market-insight/
 │   ├── analyzer/
 │   │   ├── llm_router.py ✅
 │   │   ├── report_builder.py ✅
-│   │   └── notifications.py ✅
+│   │   ├── notifications.py ✅
+│   │   ├── context_gatherer.py ✅
+│   │   └── temporal_decomposer.py ✅
 │   ├── scheduler/
 │   │   └── daily_jobs.py ✅
 │   ├── config/
@@ -294,8 +338,13 @@ market-insight/
 │   │   │   └── server.py ✅
 │   │   └── content_mcp/
 │   │       └── server.py ✅
+│   ├── migrations/
+│   │   ├── add_primary_sources_table.py ✅
+│   │   └── add_price_attributions_table.py ✅
 │   ├── pyproject.toml ✅
-│   └── .env.example ✅
+│   ├── .env.example ✅
+│   ├── test_sprint1.py ✅
+│   └── test_sprint2.py ✅
 ├── dashboard/
 │   ├── src/
 │   │   └── app/
@@ -314,6 +363,7 @@ market-insight/
 │   ├── postcss.config.js ✅
 │   ├── next.config.js ✅
 │   └── README.md ✅
+├── SPRINT2_IMPLEMENTATION_SUMMARY.md ✅
 ```
 
 **참고**: `data/chroma/` 및 `data/sqlite/` 디렉토리는 PostgreSQL + pgvector 마이그레이션 이후 사용되지 않습니다.

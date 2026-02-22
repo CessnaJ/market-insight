@@ -6,7 +6,7 @@ from pathlib import Path
 from sqlmodel import Session, create_engine, select
 from storage.models import (
     StockPrice, PortfolioHolding, Transaction, DailySnapshot,
-    ContentItem, Thought, DailyReport, init_db
+    ContentItem, Thought, DailyReport, PrimarySource, PriceAttribution, init_db
 )
 from pydantic_settings import BaseSettings
 
@@ -182,3 +182,135 @@ def add_daily_report(session: Session, report: DailyReport) -> DailyReport:
     session.commit()
     session.refresh(report)
     return report
+
+
+# ──── Primary Source Operations ────
+def add_primary_source(session: Session, primary_source: PrimarySource) -> PrimarySource:
+    """Add primary source"""
+    session.add(primary_source)
+    session.commit()
+    session.refresh(primary_source)
+    return primary_source
+
+
+def get_primary_sources_by_ticker(
+    session: Session,
+    ticker: str,
+    source_type: str | None = None,
+    limit: int = 50
+) -> list[PrimarySource]:
+    """Get primary sources for a ticker"""
+    query = select(PrimarySource).where(PrimarySource.ticker == ticker)
+    
+    if source_type:
+        query = query.where(PrimarySource.source_type == source_type)
+    
+    return session.exec(
+        query.order_by(PrimarySource.published_at.desc()).limit(limit)
+    ).all()
+
+
+def get_primary_source_by_id(session: Session, source_id: str) -> PrimarySource | None:
+    """Get primary source by ID"""
+    return session.get(PrimarySource, source_id)
+
+
+def get_recent_primary_sources(
+    session: Session,
+    source_type: str | None = None,
+    limit: int = 20
+) -> list[PrimarySource]:
+    """Get recent primary sources"""
+    query = select(PrimarySource)
+    
+    if source_type:
+        query = query.where(PrimarySource.source_type == source_type)
+    
+    return session.exec(
+        query.order_by(PrimarySource.published_at.desc()).limit(limit)
+    ).all()
+
+
+def delete_primary_source(session: Session, source_id: str) -> bool:
+    """Delete primary source by ID"""
+    source = session.get(PrimarySource, source_id)
+    if source:
+        session.delete(source)
+        session.commit()
+        return True
+    return False
+
+
+# ──── Price Attribution Operations ────
+def add_price_attribution(session: Session, attribution: PriceAttribution) -> PriceAttribution:
+    """Add price attribution analysis"""
+    session.add(attribution)
+    session.commit()
+    session.refresh(attribution)
+    return attribution
+
+
+def get_price_attributions_by_ticker(
+    session: Session,
+    ticker: str,
+    start_date: date | None = None,
+    end_date: date | None = None,
+    limit: int = 50
+) -> list[PriceAttribution]:
+    """Get price attributions for a ticker"""
+    query = select(PriceAttribution).where(PriceAttribution.ticker == ticker)
+    
+    if start_date:
+        query = query.where(PriceAttribution.event_date >= start_date)
+    if end_date:
+        query = query.where(PriceAttribution.event_date <= end_date)
+    
+    return session.exec(
+        query.order_by(PriceAttribution.event_date.desc()).limit(limit)
+    ).all()
+
+
+def get_price_attribution_by_id(session: Session, attribution_id: str) -> PriceAttribution | None:
+    """Get price attribution by ID"""
+    return session.get(PriceAttribution, attribution_id)
+
+
+def get_price_attribution_by_date(
+    session: Session,
+    ticker: str,
+    event_date: date
+) -> PriceAttribution | None:
+    """Get price attribution for a specific date"""
+    return session.exec(
+        select(PriceAttribution)
+        .where(PriceAttribution.ticker == ticker)
+        .where(PriceAttribution.event_date == event_date)
+    ).first()
+
+
+def update_price_attribution(
+    session: Session,
+    attribution_id: str,
+    **kwargs
+) -> PriceAttribution | None:
+    """Update price attribution"""
+    attribution = session.get(PriceAttribution, attribution_id)
+    if attribution:
+        for key, value in kwargs.items():
+            if hasattr(attribution, key):
+                setattr(attribution, key, value)
+        attribution.updated_at = datetime.now()
+        session.add(attribution)
+        session.commit()
+        session.refresh(attribution)
+    return attribution
+
+
+def delete_price_attribution(session: Session, attribution_id: str) -> bool:
+    """Delete price attribution by ID"""
+    attribution = session.get(PriceAttribution, attribution_id)
+    if attribution:
+        session.delete(attribution)
+        session.commit()
+        return True
+    return False

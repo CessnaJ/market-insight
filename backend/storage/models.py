@@ -4,6 +4,7 @@ from sqlmodel import SQLModel, Field
 from datetime import datetime, date
 from typing import Optional
 import uuid
+from sqlalchemy import Column, JSON
 
 
 # ──── Portfolio Related ────
@@ -81,6 +82,40 @@ class ContentItem(SQLModel, table=True):
     sentiment: Optional[str] = None  # bullish, bearish, neutral
     collected_at: datetime = Field(default_factory=datetime.now)
     published_at: Optional[datetime] = None
+
+
+# ──── Primary Sources (Korean Securities Data) ────
+class PrimarySource(SQLModel, table=True):
+    """Primary data sources for Korean securities (EARNINGS_CALL, DART_FILING, IR_MATERIAL)"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    ticker: str = Field(index=True)  # Stock ticker (e.g., "005930")
+    company_name: Optional[str] = None  # Company name (e.g., "삼성전자")
+    source_type: str = Field(index=True)  # 'EARNINGS_CALL', 'DART_FILING', 'IR_MATERIAL'
+    title: str  # Title of the document
+    published_at: datetime = Field(index=True)  # Publication date
+    content: str  # Full text content
+    authority_weight: float = Field(default=1.0)  # Primary=1.0, Secondary=0.4
+    extra_metadata: Optional[str] = None  # Additional metadata as JSON string
+    source_url: Optional[str] = None  # URL to original source
+    file_path: Optional[str] = None  # Path to stored file (if applicable)
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+
+
+# ──── Price Attribution (Temporal Signal Decomposition) ────
+class PriceAttribution(SQLModel, table=True):
+    """Price attribution analysis with temporal breakdown"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    ticker: str = Field(index=True)  # Stock ticker (e.g., "005930")
+    company_name: Optional[str] = None  # Company name
+    event_date: date = Field(index=True)  # Date of price event
+    price_change_pct: float  # Price change percentage
+    temporal_breakdown: Optional[str] = None  # JSON string of temporal breakdown
+    ai_analysis_summary: Optional[str] = None  # AI-generated summary
+    confidence_score: Optional[float] = None  # Overall confidence score (0.0-1.0)
+    dominant_timeframe: Optional[str] = None  # 'short', 'medium', or 'long'
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
 
 
 # ──── Thoughts/Memo ────
