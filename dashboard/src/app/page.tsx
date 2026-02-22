@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { TrendingUp, TrendingDown, DollarSign, FileText, RefreshCw, Brain, Layout, Wifi, WifiOff } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, FileText, RefreshCw, Brain, Layout, Wifi, WifiOff, Clock, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { useWebSocket } from "@/hooks/useWebSocket";
 
@@ -127,6 +127,20 @@ export default function Dashboard() {
                 >
                   <FileText size={16} />
                   리포트
+                </Link>
+                <Link
+                  href="/temporal"
+                  className="text-gray-600 hover:text-gray-900 flex items-center gap-1 text-sm font-medium"
+                >
+                  <Clock size={16} />
+                  시계열 분석
+                </Link>
+                <Link
+                  href="/assumptions"
+                  className="text-gray-600 hover:text-gray-900 flex items-center gap-1 text-sm font-medium"
+                >
+                  <CheckCircle size={16} />
+                  투자 가정
                 </Link>
               </nav>
             </div>

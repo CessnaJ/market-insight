@@ -623,6 +623,90 @@ curl http://localhost:3000/api/v1/assumptions/stats/accuracy
 curl -X POST http://localhost:3000/api/v1/assumptions/validate/job
 ```
 
+### Phase 5: 통합 및 마무리 (Sprint 5) ✅
+- [x] `analyzer/enhanced_report_builder.py` 생성 (모든 스프린트 통합 리포트 빌더)
+  - EnhancedReportBuilder 클래스 (모든 스프린트 컴포넌트 통합)
+  - generate_comprehensive_report() (종합 리포트 생성)
+  - generate_daily_report_with_analysis() (향상된 일일 리포트)
+  - generate_asset_report() (종목별 리포트)
+  - 데이터 수집 메서드 (Primary Sources, Temporal Attributions, Investment Assumptions)
+  - 포맷팅 메서드 (LLM 프롬프트용)
+- [x] `api/routes/enhanced_reports.py` 생성 (향상된 리포트 API)
+  - POST /api/v1/enhanced-reports/comprehensive (종합 리포트 생성)
+  - POST /api/v1/enhanced-reports/comprehensive/async (비동기 리포트 생성)
+  - POST /api/v1/enhanced-reports/daily-enhanced (향상된 일일 리포트)
+  - POST /api/v1/enhanced-reports/asset (종목별 리포트)
+  - POST /api/v1/enhanced-reports/batch (배치 리포트 생성)
+  - POST /api/v1/enhanced-reports/export (리포트 내보내기)
+  - GET /api/v1/enhanced-reports/health (헬스 체크)
+- [x] `config/prompts.yaml` 업데이트 (향상된 리포트 프롬프트)
+  - comprehensive_report 시스템 프롬프트
+  - daily_report_enhanced 시스템 프롬프트
+  - comprehensive_report 사용자 프롬프트
+  - daily_report_enhanced 사용자 프롬프트
+- [x] `dashboard/src/app/temporal/page.tsx` 생성 (시계열 분석 대시보드)
+  - 가격 속성 목록 표시
+  - 통계 요약 (총 건수, 단/중/장기 우세)
+  - 시간대별 필터링
+  - 상세 모달
+- [x] `dashboard/src/app/assumptions/page.tsx` 생성 (투자 가정 추적 대시보드)
+  - 투자 가정 목록 표시
+  - 통계 요약 (총 건수, 검증 대기, 정확도)
+  - 상태 및 카테고리 필터링
+  - 상세 모달
+- [x] `dashboard/src/app/page.tsx` 업데이트 (네비게이션 링크 추가)
+  - 시계열 분석 링크
+  - 투자 가정 링크
+- [x] `api/main.py` 업데이트 (향상된 리포트 라우터 등록)
+- [x] `SPRINT5_IMPLEMENTATION_SUMMARY.md` 생성 (Sprint 5 구현 요약)
+  - 구현된 컴포넌트 설명
+  - API 사용 가이드
+  - 아키텍처 개요
+  - 배포 지침
+- [x] `test_sprint5.py` 생성 (Sprint 5 통합 테스트)
+  - EnhancedReportBuilder 테스트
+  - 종합 리포트 생성 테스트
+  - 종합 워크플로우 테스트
+  - 데이터 일관성 테스트
+  - 성능 테스트
+  - 오류 처리 테스트
+
+### API 사용 예시 (Sprint 5)
+
+```bash
+# 종합 리포트 생성
+curl -X POST "http://localhost:8000/api/v1/enhanced-reports/comprehensive" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "target_date": "2026-02-22",
+    "tickers": ["005930", "000660"]
+  }'
+
+# 종목별 리포트 생성
+curl -X POST "http://localhost:8000/api/v1/enhanced-reports/asset" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "ticker": "005930",
+    "target_date": "2026-02-22"
+  }'
+
+# 배치 리포트 생성
+curl -X POST "http://localhost:8000/api/v1/enhanced-reports/batch" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tickers": ["005930", "000660", "035420"],
+    "target_date": "2026-02-22"
+  }'
+
+# 리포트 내보내기
+curl -X POST "http://localhost:8000/api/v1/enhanced-reports/export" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "report_id": "report-id-here",
+    "format": "markdown"
+  }'
+```
+
 ---
 
 ## 구현 완료 요약
