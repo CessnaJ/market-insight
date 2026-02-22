@@ -118,6 +118,29 @@ class PriceAttribution(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=datetime.now)
 
 
+# ──── Investment Assumptions (Sprint 3) ────
+class InvestmentAssumption(SQLModel, table=True):
+    """Investment assumptions extracted from reports and filings"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    ticker: str = Field(index=True)  # Stock ticker (e.g., "005930")
+    company_name: Optional[str] = None  # Company name
+    assumption_text: str  # The assumption text
+    assumption_category: str = Field(index=True)  # REVENUE, MARGIN, MACRO, CAPACITY, MARKET_SHARE
+    time_horizon: str  # SHORT, MEDIUM, LONG
+    predicted_value: Optional[str] = None  # Predicted value (e.g., "1조", "20%")
+    metric_name: Optional[str] = None  # Metric name (e.g., "HBM 매출", "GP 마진")
+    verification_date: Optional[date] = None  # Date when assumption can be verified
+    actual_value: Optional[str] = None  # Actual value when verified
+    is_correct: Optional[bool] = None  # Whether assumption was correct
+    validation_source: Optional[str] = None  # Source of validation data
+    model_confidence_at_generation: float = Field(default=0.5)  # Model's confidence (0.0-1.0)
+    status: str = Field(default="PENDING")  # PENDING, VERIFIED, FAILED
+    source_type: Optional[str] = None  # EARNINGS_CALL, DART_FILING, IR_MATERIAL
+    source_id: Optional[str] = None  # Reference to primary source
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+
+
 # ──── Thoughts/Memo ────
 class Thought(SQLModel, table=True):
     """사용자 생각/메모"""

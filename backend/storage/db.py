@@ -6,7 +6,8 @@ from pathlib import Path
 from sqlmodel import Session, create_engine, select
 from storage.models import (
     StockPrice, PortfolioHolding, Transaction, DailySnapshot,
-    ContentItem, Thought, DailyReport, PrimarySource, PriceAttribution, init_db
+    ContentItem, Thought, DailyReport, PrimarySource, PriceAttribution,
+    InvestmentAssumption, init_db
 )
 from pydantic_settings import BaseSettings
 
@@ -314,3 +315,186 @@ def delete_price_attribution(session: Session, attribution_id: str) -> bool:
         session.commit()
         return True
     return False
+
+
+# ──── Investment Assumption Operations (Sprint 3) ────
+def add_investment_assumption(
+    session: Session,
+    assumption: InvestmentAssumption
+) -> InvestmentAssumption:
+    """Add investment assumption"""
+    session.add(assumption)
+    session.commit()
+    session.refresh(assumption)
+    return assumption
+
+
+def get_assumptions_by_ticker(
+    session: Session,
+    ticker: str,
+    category: str | None = None,
+    status: str | None = None,
+    limit: int = 50
+) -> list[InvestmentAssumption]:
+    """Get assumptions for a ticker"""
+    query = select(InvestmentAssumption).where(InvestmentAssumption.ticker == ticker)
+    
+    if category:
+        query = query.where(InvestmentAssumption.assumption_category == category)
+    if status:
+        query = query.where(InvestmentAssumption.status == status)
+    
+    return session.exec(
+        query.order_by(InvestmentAssumption.created_at.desc()).limit(limit)
+    ).all()
+
+
+def get_pending_assumptions(
+    session: Session,
+    ticker: str | None = None,
+    limit: int = 50
+) -> list[InvestmentAssumption]:
+    """Get pending assumptions for validation"""
+    query = select(InvestmentAssumption).where(InvestmentAssumption.status == "PENDING")
+    
+    if ticker:
+        query = query.where(InvestmentAssumption.ticker == ticker)
+    
+    # Only return assumptions where verification date is today or in the past
+    today = date.today()
+    query = query.where(
+        (InvestmentAssumption.verification_date <= today) |
+        (InvestmentAssumption.verification_date == None)
+    )
+    
+    return session.exec(
+        query.order_by(InvestmentAssumption.created_at.asc()).limit(limit)
+    ).all()
+
+
+def get_assumption_by_id(session: Session, assumption_id: str) -> InvestmentAssumption | None:
+    """Get assumption by ID"""
+    return session.get(InvestmentAssumption, assumption_id)
+
+
+def validate_assumption(
+    session: Session,
+    assumption_id: str,
+    actual_value: str,
+    is_correct: bool,
+    validation_source: str | None = None
+) -> InvestmentAssumption | None:
+    """Validate an assumption with actual data"""
+    assumption = session.get(InvestmentAssumption, assumption_id)
+    if assumption:
+        assumption.actual_value = actual_value
+        assumption.is_correct = is_correct
+        assumption.validation_source = validation_source
+        assumption.status = "VERIFIED" if is_correct else "FAILED"
+        assumption.updated_at = datetime.now()
+        session.add(assumption)
+        session.commit()
+        session.refresh(assumption)
+    return assumption
+
+
+def get_assumption_accuracy_stats(
+    session: Session,
+    ticker: str | None = None,
+    category: str | None = None,
+    time_horizon: str | None = None
+) -> dict[str, Any]:
+    """Get assumption accuracy statistics"""
+    from typing import Any
+    
+    query = select(InvestmentAssumption).where(
+        InvestmentAssumption.status.in_(["VERIFIED", "FAILED"])
+    )
+    
+    if ticker:
+        query = query.where(InvestmentAssumption.ticker == ticker)
+    if category:
+        query = query.where(InvestmentAssumption.assumption_category == category)
+    if time_horizon:
+        query = query.where(InvestmentAssumption.time_horizon == time_horizon)
+    
+    assumptions = session.exec(query).all()
+    
+    total = len(assumptions)
+    if total == 0:
+        return {
+            "total": 0,
+            "correct": 0,
+            "incorrect": 0,
+            "accuracy": 0.0,
+            "by_category": {},
+            "by_time_horizon": {}
+        }
+    
+    correct = sum(1 for a in assumptions if a.is_correct)
+    incorrect = total - correct
+    
+    # Stats by category
+    by_category = {}
+    for cat in ["REVENUE", "MARGIN", "MACRO", "CAPACITY", "MARKET_SHARE"]:
+        cat_assumptions = [a for a in assumptions if a.assumption_category == cat]
+        if cat_assumptions:
+            cat_correct = sum(1 for a in cat_assumptions if a.is_correct)
+            by_category[cat] = {
+                "total": len(cat_assumptions),
+                "correct": cat_correct,
+                "accuracy": cat_correct / len(cat_assumptions) if cat_assumptions else 0.0
+            }
+    
+    # Stats by time horizon
+    by_time_horizon = {}
+    for horizon in ["SHORT", "MEDIUM", "LONG"]:
+        horizon_assumptions = [a for a in assumptions if a.time_horizon == horizon]
+        if horizon_assumptions:
+            horizon_correct = sum(1 for a in horizon_assumptions if a.is_correct)
+            by_time_horizon[horizon] = {
+                "total": len(horizon_assumptions),
+                "correct": horizon_correct,
+                "accuracy": horizon_correct / len(horizon_assumptions) if horizon_assumptions else 0.0
+            }
+    
+    return {
+        "total": total,
+        "correct": correct,
+        "incorrect": incorrect,
+        "accuracy": correct / total if total > 0 else 0.0,
+        "by_category": by_category,
+        "by_time_horizon": by_time_horizon
+    }
+
+
+def delete_assumption(session: Session, assumption_id: str) -> bool:
+    """Delete assumption by ID"""
+    assumption = session.get(InvestmentAssumption, assumption_id)
+    if assumption:
+        session.delete(assumption)
+        session.commit()
+        return True
+    return False
+
+
+def get_all_assumptions(
+    session: Session,
+    ticker: str | None = None,
+    category: str | None = None,
+    status: str | None = None,
+    limit: int = 100
+) -> list[InvestmentAssumption]:
+    """Get all assumptions with optional filters"""
+    query = select(InvestmentAssumption)
+    
+    if ticker:
+        query = query.where(InvestmentAssumption.ticker == ticker)
+    if category:
+        query = query.where(InvestmentAssumption.assumption_category == category)
+    if status:
+        query = query.where(InvestmentAssumption.status == status)
+    
+    return session.exec(
+        query.order_by(InvestmentAssumption.created_at.desc()).limit(limit)
+    ).all()

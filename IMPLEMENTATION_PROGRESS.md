@@ -505,6 +505,126 @@ NOTIFICATION_QUIET_HOURS_END=8
 
 ---
 
+## Sprint 3: Assumption Tracking System ✅
+
+### 완료된 작업
+
+#### 1. Database Schema ✅
+- [x] `InvestmentAssumption` 모델 추가 (`storage/models.py`)
+  - ticker, company_name, assumption_text, assumption_category
+  - time_horizon (SHORT, MEDIUM, LONG)
+  - predicted_value, metric_name, verification_date
+  - actual_value, is_correct, validation_source
+  - model_confidence_at_generation
+  - status (PENDING, VERIFIED, FAILED)
+  - source_type, source_id
+  - created_at, updated_at
+
+#### 2. AssumptionExtractor ✅
+- [x] `analyzer/assumption_extractor.py` 생성
+  - `AssumptionExtractor` 클래스
+  - `extract_assumptions()` 함수 - LLM을 사용하여 보고서에서 가정 추출
+  - 가정 카테고리 분류 (REVENUE, MARGIN, MACRO, CAPACITY, MARKET_SHARE)
+  - 시간 지평 할당 (SHORT, MEDIUM, LONG)
+  - 신뢰도 점수 계산 (출처 권한 기반)
+  - `ExtractedAssumption`, `AssumptionExtractionResult` Pydantic 모델
+
+#### 3. Validation Scheduler ✅
+- [x] `scheduler/assumption_validator.py` 생성
+  - `AssumptionValidator` 클래스
+  - `FinancialDataProvider` 클래스 (Mock 데이터)
+  - `run_assumption_validation_job()` - 예약된 검증 작업
+  - `validate_single_assumption()` - 단일 가정 검증
+  - `get_accuracy_trends()` - 정확도 추적
+  - 숫자 비교 및 의미적 비교 (LLM 활용)
+  - 한국 단위 처리 (조, 억, 만, 천)
+
+#### 4. Database Operations ✅
+- [x] `storage/db.py`에 가정 관련 함수 추가
+  - `add_investment_assumption()` - 가정 추가
+  - `get_assumptions_by_ticker()` - 티커별 가정 조회
+  - `get_pending_assumptions()` - 검증 대기 중인 가정 조회
+  - `validate_assumption()` - 가정 검증
+  - `get_assumption_accuracy_stats()` - 정확도 통계
+  - `delete_assumption()` - 가정 삭제
+  - `get_all_assumptions()` - 모든 가정 조회
+
+#### 5. API Endpoints ✅
+- [x] `api/routes/assumptions.py` 생성
+  - GET `/api/v1/assumptions/` - 모든 가정 목록
+  - GET `/api/v1/assumptions/{id}` - 특정 가정 조회
+  - GET `/api/v1/assumptions/ticker/{ticker}` - 티커별 가정
+  - GET `/api/v1/assumptions/pending/list` - 검증 대기 중인 가정
+  - POST `/api/v1/assumptions/validate/{id}` - 수동 검증
+  - POST `/api/v1/assumptions/validate/job` - 검증 작업 실행
+  - POST `/api/v1/assumptions/extract` - 보고서에서 가정 추출
+  - DELETE `/api/v1/assumptions/{id}` - 가정 삭제
+  - GET `/api/v1/assumptions/stats/accuracy` - 정확도 통계
+  - GET `/api/v1/assumptions/stats/trends` - 정확도 추이
+  - POST `/api/v1/assumptions/batch/validate` - 일괄 검증
+  - GET `/api/v1/assumptions/categories/list` - 카테고리 목록
+  - GET `/api/v1/assumptions/time-horizons/list` - 시간 지평 목록
+- [x] `api/main.py`에 assumptions 라우터 추가
+
+#### 6. Testing ✅
+- [x] `backend/test_sprint3.py` 생성
+  - 데이터베이스 작업 테스트
+  - 가정 추출 테스트
+  - 검증 로직 테스트
+  - 정확도 계산 테스트
+  - API 엔드포인트 테스트 (예시 포함)
+
+#### 7. Migration Script ✅
+- [x] `migrations/add_investment_assumptions_table.py` 생성
+
+### 핵심 기능
+
+1. **가정 추출**
+   - LLM을 사용하여 보고서 및 공시에서 투자 가정 자동 추출
+   - 카테고리별 분류 (REVENUE, MARGIN, MACRO, CAPACITY, MARKET_SHARE)
+   - 시간 지평별 분류 (SHORT, MEDIUM, LONG)
+   - 출처 권한 기반 신뢰도 점수 조정
+
+2. **검증 시스템**
+   - 예약된 작업으로 자동 검증
+   - 실제 금융 데이터와 비교
+   - 숫자 비교 및 의미적 비교 (LLM 활용)
+   - 검증 상태 추적 (PENDING, VERIFIED, FAILED)
+
+3. **정확도 추적**
+   - 전체 정확도 통계
+   - 카테고리별 정확도
+   - 시간 지평별 정확도
+   - 주간 추이 분석
+
+### API 사용 예시
+
+```bash
+# 보고서에서 가정 추출
+curl -X POST http://localhost:3000/api/v1/assumptions/extract \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Q3 HBM 매출 1조 달성 예상",
+    "ticker": "005930",
+    "company_name": "삼성전자",
+    "source_type": "EARNINGS_CALL"
+  }'
+
+# 티커별 가정 조회
+curl http://localhost:3000/api/v1/assumptions/ticker/005930
+
+# 검증 대기 중인 가정 조회
+curl http://localhost:3000/api/v1/assumptions/pending/list
+
+# 정확도 통계 조회
+curl http://localhost:3000/api/v1/assumptions/stats/accuracy
+
+# 검증 작업 실행
+curl -X POST http://localhost:3000/api/v1/assumptions/validate/job
+```
+
+---
+
 ## 구현 완료 요약
 
 ### 백엔드 (FastAPI) ✅
