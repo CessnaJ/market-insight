@@ -141,6 +141,24 @@ class InvestmentAssumption(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=datetime.now)
 
 
+# ──── Report Chunks (Parent-Child Indexing - Sprint 4) ────
+class ReportChunk(SQLModel, table=True):
+    """Parent-child chunked content for weighted search"""
+    __tablename__ = "report_chunks"
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    source_id: str = Field(index=True)  # References reports.id OR primary_sources.id
+    source_type: str = Field(index=True)  # 'REPORT' or 'PRIMARY'
+    content: str  # Chunk text content
+    embedding: Optional[str] = Field(default=None)  # pgvector stored as string
+    authority_weight: float = Field(default=1.0)  # From source (Primary=1.0, Report=0.4)
+    chunk_type: str = Field(index=True)  # 'SUMMARY' or 'DETAIL'
+    chunk_index: int = Field(default=0)  # Order within chunks
+    parent_id: Optional[str] = Field(default=None, foreign_key="report_chunks.id")  # For DETAIL chunks
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+
+
 # ──── Thoughts/Memo ────
 class Thought(SQLModel, table=True):
     """사용자 생각/메모"""

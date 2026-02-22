@@ -7,7 +7,7 @@ from sqlmodel import Session, create_engine, select
 from storage.models import (
     StockPrice, PortfolioHolding, Transaction, DailySnapshot,
     ContentItem, Thought, DailyReport, PrimarySource, PriceAttribution,
-    InvestmentAssumption, init_db
+    InvestmentAssumption, ReportChunk, init_db
 )
 from pydantic_settings import BaseSettings
 
@@ -498,3 +498,311 @@ def get_all_assumptions(
     return session.exec(
         query.order_by(InvestmentAssumption.created_at.desc()).limit(limit)
     ).all()
+
+
+# ──── Report Chunk Operations (Sprint 4) ────
+def add_report_chunk(
+    session: Session,
+    chunk: ReportChunk
+) -> ReportChunk:
+    """
+    Add a report chunk
+    
+    Args:
+        session: Database session
+        chunk: ReportChunk to add
+        
+    Returns:
+        Added chunk
+    """
+    session.add(chunk)
+    session.commit()
+    session.refresh(chunk)
+    return chunk
+
+
+def get_chunks_by_source(
+    session: Session,
+    source_id: str,
+    source_type: str,
+    chunk_type: str | None = None
+) -> list[ReportChunk]:
+    """
+    Get chunks by source
+    
+    Args:
+        session: Database session
+        source_id: Source ID
+        source_type: 'REPORT' or 'PRIMARY'
+        chunk_type: Optional filter by 'SUMMARY' or 'DETAIL'
+        
+    Returns:
+        List of chunks
+    """
+    query = select(ReportChunk).where(
+        ReportChunk.source_id == source_id,
+        ReportChunk.source_type == source_type
+    )
+    
+    if chunk_type:
+        query = query.where(ReportChunk.chunk_type == chunk_type)
+    
+    return session.exec(
+        query.order_by(ReportChunk.chunk_index)
+    ).all()
+
+
+def get_chunks_with_parent_context(
+    session: Session,
+    chunk_id: str,
+    include_siblings: bool = True
+) -> dict[str, Any]:
+    """
+    Get a chunk with its parent context
+    
+    Args:
+        session: Database session
+        chunk_id: Chunk ID
+        include_siblings: Include sibling detail chunks
+        
+    Returns:
+        Dictionary with chunk, parent, and siblings
+    """
+    from typing import Any
+    
+    chunk = session.get(ReportChunk, chunk_id)
+    if not chunk:
+        return None
+    
+    result: dict[str, Any] = {
+        "chunk": {
+            "id": chunk.id,
+            "source_id": chunk.source_id,
+            "source_type": chunk.source_type,
+            "content": chunk.content,
+            "authority_weight": chunk.authority_weight,
+            "chunk_type": chunk.chunk_type,
+            "chunk_index": chunk.chunk_index,
+            "parent_id": chunk.parent_id,
+            "created_at": chunk.created_at.isoformat() if chunk.created_at else None
+        },
+        "parent": None,
+        "siblings": []
+    }
+    
+    # Get parent if this is a detail chunk
+    if chunk.parent_id:
+        parent = session.get(ReportChunk, chunk.parent_id)
+        if parent:
+            result["parent"] = {
+                "id": parent.id,
+                "source_id": parent.source_id,
+                "source_type": parent.source_type,
+                "content": parent.content,
+                "authority_weight": parent.authority_weight,
+                "chunk_type": parent.chunk_type,
+                "chunk_index": parent.chunk_index,
+                "parent_id": parent.parent_id,
+                "created_at": parent.created_at.isoformat() if parent.created_at else None
+            }
+            
+            # Get siblings if requested
+            if include_siblings:
+                siblings = session.exec(
+                    select(ReportChunk).where(
+                        ReportChunk.parent_id == chunk.parent_id,
+                        ReportChunk.id != chunk_id
+                    ).order_by(ReportChunk.chunk_index)
+                ).all()
+                
+                result["siblings"] = [
+                    {
+                        "id": s.id,
+                        "source_id": s.source_id,
+                        "source_type": s.source_type,
+                        "content": s.content,
+                        "authority_weight": s.authority_weight,
+                        "chunk_type": s.chunk_type,
+                        "chunk_index": s.chunk_index,
+                        "parent_id": s.parent_id,
+                        "created_at": s.created_at.isoformat() if s.created_at else None
+                    }
+                    for s in siblings
+                ]
+    
+    return result
+
+
+def get_parent_chunks(
+    session: Session,
+    source_id: str,
+    source_type: str
+) -> list[ReportChunk]:
+    """
+    Get all parent (summary) chunks for a source
+    
+    Args:
+        session: Database session
+        source_id: Source ID
+        source_type: 'REPORT' or 'PRIMARY'
+        
+    Returns:
+        List of parent chunks
+    """
+    return session.exec(
+        select(ReportChunk).where(
+            ReportChunk.source_id == source_id,
+            ReportChunk.source_type == source_type,
+            ReportChunk.chunk_type == "SUMMARY"
+        ).order_by(ReportChunk.chunk_index)
+    ).all()
+
+
+def search_chunks_weighted(
+    session: Session,
+    query_embedding: list[float],
+    limit: int = 10,
+    source_type_filter: str | None = None,
+    chunk_type_filter: str | None = None,
+    min_similarity: float = 0.0
+) -> list[dict[str, Any]]:
+    """
+    Search chunks with weighted similarity
+    
+    Args:
+        session: Database session
+        query_embedding: Query embedding vector
+        limit: Maximum results
+        source_type_filter: Filter by source type
+        chunk_type_filter: Filter by chunk type
+        min_similarity: Minimum similarity threshold
+        
+    Returns:
+        List of chunks with similarity scores
+    """
+    from typing import Any
+    from sqlalchemy import text
+    
+    embedding_str = f"[{','.join(str(x) for x in query_embedding)}]"
+    
+    sql_query = text("""
+        SELECT
+            rc.id,
+            rc.source_id,
+            rc.source_type,
+            rc.content,
+            rc.authority_weight,
+            rc.chunk_type,
+            rc.chunk_index,
+            rc.parent_id,
+            rc.created_at,
+            1 - (rc.embedding <=> :embedding::vector) as similarity
+        FROM report_chunks rc
+        WHERE 1 - (rc.embedding <=> :embedding::vector) >= :min_similarity
+    """)
+    
+    params = {
+        "embedding": embedding_str,
+        "min_similarity": min_similarity
+    }
+    
+    if source_type_filter:
+        sql_query = text(sql_query.text + " AND rc.source_type = :source_type")
+        params["source_type"] = source_type_filter
+    
+    if chunk_type_filter:
+        sql_query = text(sql_query.text + " AND rc.chunk_type = :chunk_type")
+        params["chunk_type"] = chunk_type_filter
+    
+    # Add ordering and limit
+    sql_query = text(sql_query.text + " ORDER BY similarity DESC LIMIT :limit")
+    params["limit"] = limit
+    
+    result = session.execute(sql_query, params).fetchall()
+    
+    return [
+        {
+            "id": row.id,
+            "source_id": row.source_id,
+            "source_type": row.source_type,
+            "content": row.content,
+            "authority_weight": row.authority_weight,
+            "chunk_type": row.chunk_type,
+            "chunk_index": row.chunk_index,
+            "parent_id": row.parent_id,
+            "similarity": row.similarity,
+            "weighted_score": row.similarity * row.authority_weight,
+            "created_at": row.created_at.isoformat() if row.created_at else None
+        }
+        for row in result
+    ]
+
+
+def delete_chunks_by_source(
+    session: Session,
+    source_id: str,
+    source_type: str
+) -> int:
+    """
+    Delete all chunks for a source
+    
+    Args:
+        session: Database session
+        source_id: Source ID
+        source_type: 'REPORT' or 'PRIMARY'
+        
+    Returns:
+        Number of deleted chunks
+    """
+    chunks = session.exec(
+        select(ReportChunk).where(
+            ReportChunk.source_id == source_id,
+            ReportChunk.source_type == source_type
+        )
+    ).all()
+    
+    count = len(chunks)
+    for chunk in chunks:
+        session.delete(chunk)
+    
+    session.commit()
+    return count
+
+
+def get_chunk_statistics(
+    session: Session,
+    source_id: str | None = None,
+    source_type: str | None = None
+) -> dict[str, Any]:
+    """
+    Get statistics about chunks
+    
+    Args:
+        session: Database session
+        source_id: Optional source ID filter
+        source_type: Optional source type filter
+        
+    Returns:
+        Dictionary with chunk statistics
+    """
+    from typing import Any
+    
+    query = select(ReportChunk)
+    
+    if source_id:
+        query = query.where(ReportChunk.source_id == source_id)
+    if source_type:
+        query = query.where(ReportChunk.source_type == source_type)
+    
+    chunks = session.exec(query).all()
+    
+    return {
+        "total_chunks": len(chunks),
+        "summary_chunks": len([c for c in chunks if c.chunk_type == "SUMMARY"]),
+        "detail_chunks": len([c for c in chunks if c.chunk_type == "DETAIL"]),
+        "by_source_type": {
+            "REPORT": len([c for c in chunks if c.source_type == "REPORT"]),
+            "PRIMARY": len([c for c in chunks if c.source_type == "PRIMARY"])
+        },
+        "avg_authority_weight": sum(c.authority_weight for c in chunks) / len(chunks) if chunks else 0.0
+    }
