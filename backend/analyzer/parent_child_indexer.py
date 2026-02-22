@@ -41,6 +41,7 @@ AUTHORITY_WEIGHTS = {
     "EARNINGS_CALL": 1.0,
     "DART_FILING": 1.0,
     "IR_MATERIAL": 0.9,
+    "NAVER_REPORT": 0.4,  # Secondary source (Naver Finance reports)
     "REPORT": 0.4,  # Secondary source
 }
 

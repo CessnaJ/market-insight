@@ -300,9 +300,12 @@ market-insight/
 │   │       └── temporal_analysis.py ✅
 │   ├── collector/
 │   │   ├── stock_tracker.py ✅
-│   │   ├── thought_logger.py ✅
-│   │   ├── youtube_collector.py ✅
-│   │   └── naver_blog_collector.py ✅
+│   │       ├── thought_logger.py ✅
+│   │       ├── youtube_collector.py ✅
+│   │       ├── naver_blog_collector.py ✅
+│   │       ├── naver_report_collector.py ✅
+│   │       ├── dart_filing_collector.py ✅
+│   │       └── earnings_call_collector.py ✅
 │   ├── storage/
 │   │   ├── models.py ✅
 │   │   ├── db.py ✅
@@ -737,6 +740,47 @@ curl -X POST "http://localhost:8000/api/v1/enhanced-reports/export" \
 - ✅ PostgreSQL + pgvector (Docker)
 - ✅ Ollama 연동 (선택 사항)
 - ✅ Docker Compose 설정
+
+---
+
+## Naver Finance Report Collector ✅
+
+**파일**:
+- [`backend/collector/naver_report_collector.py`](market-insight/backend/collector/naver_report_collector.py) - Naver Finance 웹 스크래핑
+- [`backend/api/routes/naver_reports.py`](market-insight/backend/api/routes/naver_reports.py) - API 엔드포인트
+- [`backend/test_naver_reports.py`](market-insight/backend/test_naver_reports.py) - 테스트 스위트
+- [`NAVER_REPORT_COLLECTOR_IMPLEMENTATION.md`](market-insight/NAVER_REPORT_COLLECTOR_IMPLEMENTATION.md) - 구현 문서
+
+**기능**:
+- Playwright 기반 Naver Finance 웹 스크래핑
+- PDF 다운로드 및 텍스트 추출 (PyPDF2)
+- 메타데이터 파싱 (애널리스트, 의견, 목표가)
+- 권위 가중치: 0.4 (2차 소스)
+- Parent-Child 인덱싱 통합
+- 가중치 검색 통합
+
+**API 엔드포인트**:
+- POST `/api/v1/naver-reports/collect` - Naver 리포트 수집 (비동기)
+- POST `/api/v1/naver-reports/collect/sync` - Naver 리포트 수집 (동기)
+- POST `/api/v1/naver-reports/batch` - 배치 수집
+- GET `/api/v1/naver-reports/list` - 리포트 목록 조회
+- GET `/api/v1/naver-reports/{report_id}` - 특정 리포트 조회
+- DELETE `/api/v1/naver-reports/{report_id}` - 리포트 삭제
+- POST `/api/v1/naver-reports/index/{report_id}` - 단일 리포트 인덱싱
+- POST `/api/v1/naver-reports/index/batch` - 배치 인덱싱
+- GET `/api/v1/naver-reports/stats/summary` - 통계 조회
+
+**의존성**:
+- `playwright>=1.40.0` - 웹 스크래핑
+- `PyPDF2>=3.0.1` - PDF 텍스트 추출
+
+**테스트**:
+- 컬렉터 초기화 및 파싱 테스트
+- 데이터베이스 저장 테스트
+- 권위 가중치 검증
+- Parent-Child 인덱싱 테스트
+
+**참고**: [`NAVER_REPORT_COLLECTOR_IMPLEMENTATION.md`](market-insight/NAVER_REPORT_COLLECTOR_IMPLEMENTATION.md)에서 상세 정보 확인
 
 ---
 

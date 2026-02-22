@@ -59,7 +59,7 @@ async def health_check():
 
 
 # ──── API Routes ────
-from api.routes import portfolio, thoughts, content, reports, websocket, primary_sources, temporal_analysis, assumptions, search, enhanced_reports
+from api.routes import portfolio, thoughts, content, reports, websocket, primary_sources, temporal_analysis, assumptions, search, enhanced_reports, naver_reports
 
 app.include_router(portfolio.router, prefix="/api/v1/portfolio", tags=["Portfolio"])
 app.include_router(thoughts.router, prefix="/api/v1/thoughts", tags=["Thoughts"])
@@ -71,6 +71,7 @@ app.include_router(temporal_analysis.router, prefix="/api/v1", tags=["Temporal A
 app.include_router(assumptions.router, prefix="/api/v1", tags=["Assumptions"])
 app.include_router(search.router, prefix="/api/v1", tags=["Search"])
 app.include_router(enhanced_reports.router, prefix="/api/v1/enhanced-reports", tags=["Enhanced Reports"])
+app.include_router(naver_reports.router, tags=["Naver Reports"])
 
 
 # ──── Root Endpoint ────
